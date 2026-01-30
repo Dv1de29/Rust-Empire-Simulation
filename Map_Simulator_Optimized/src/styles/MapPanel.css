@@ -1,0 +1,63 @@
+/* Main container for the panel (Header + Map) */
+.map_container {
+    display: flex;
+    flex-direction: column;
+    
+    /* FIX 1: Allow it to grow, but respect the aspect ratio */
+    flex: 1; 
+    /* max-width: 1000px; */
+    width: 70vw; 
+    
+    /* FIX 2: Center it horizontally if there's extra space */
+    margin: 0 auto; 
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden; 
+    font-family: 'Inter', sans-serif;
+    
+    /* FIX 3: Ensure it doesn't get squashed too small */
+    min-width: 400px; 
+}
+
+/* Header section styling */
+.map_header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    font-weight: 600;
+}
+
+/* The Square Stage */
+.map {
+    position: relative; 
+    width: 100%;
+    
+    /* FIX 4: Force a perfect square based on WIDTH */
+    aspect-ratio: 3 / 2; 
+    
+    /* Remove 'flex-grow: 1' to stop it from stretching vertically */
+    background-color: #f0f0f0; 
+    overflow: hidden;
+    cursor: crosshair; 
+}
+
+/* Wrapper for layers */
+.map-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated; 
+}
+
+/* Layer Z-Indices */
+.terrain-layer {
+    z-index: 1;
+    pointer-events: none; 
+}
+
+.ownership-layer {
+    z-index: 2;
+   opacity: 0.75;
+}

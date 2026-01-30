@@ -1,0 +1,10 @@
+[build]
+# These flags tell Rust: "We are using SharedArrayBuffer"
+rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
+
+[unstable]
+# 2. Recompile the standard library so it supports threads (Mutex, Arc, etc.)
+build-std = ["std", "panic_abort"]

@@ -1,0 +1,25 @@
+[package]
+name = "rust_simulator"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The core bridge between Rust and JS
+wasm-bindgen = "0.2"
+
+# Error logging: Makes Rust panics appear in the browser console
+console_error_panic_hook = "0.1"
+
+# Parallelism
+# Standard Rayon library
+rayon = "1.7"
+# The adapter that makes Rayon work on the Web (via Web Workers)
+wasm-bindgen-rayon = "1.0"
+
+# (Optional) For accessing browser APIs like console.log from Rust
+[dependencies.web-sys]
+version = "0.3"
+features = ["console"]

@@ -1,0 +1,92 @@
+/* NavBar.css */
+:root {
+  --nav-height: 5vh;
+  --nav-bg: #2c3e50;
+  --nav-text: #ecf0f1;
+}
+
+.navbar {
+  height: var(--nav-height);
+  width: 100%;
+  background-color: var(--nav-bg);
+  color: var(--nav-text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  box-sizing: border-box; /* Ensures padding doesn't increase height */
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Logo Area */
+.logo {
+  font-weight: bold;
+  /* Font size scales with viewport but caps at reasonable size */
+  font-size: min(1.5rem, 3.5vh); 
+  white-space: nowrap;
+}
+
+/* Links (Desktop) */
+.nav-links {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--nav-text);
+  font-size: min(1rem, 3vh);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  transition: background-color 0.2s;
+}
+
+.nav-links a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Hamburger Icon (Hidden on Desktop) */
+.hamburger {
+  display: none;
+  font-size: min(1.5rem, 3.5vh);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* --- Mobile / Responsive Styles --- */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none; /* Hide regular links */
+    flex-direction: column;
+    position: absolute;
+    top: var(--nav-height); /* Push exactly below the 5vh bar */
+    right: 0;
+    width: 200px; /* Or 100% width */
+    background-color: #34495e;
+    box-shadow: -2px 5px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+    height: auto;
+  }
+
+  /* Show menu when state is active */
+  .nav-links.active {
+    display: flex;
+  }
+
+  .nav-links a {
+    padding: 15px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    /* Reset font size for mobile menu readability */
+    font-size: 1rem; 
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .hamburger {
+    display: block;
+  }
+}

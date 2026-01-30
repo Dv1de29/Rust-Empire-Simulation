@@ -1,0 +1,80 @@
+/* Slider.css */
+
+.slider-wrapper {
+    /* RESPONSIVE: Takes full width of the parent (e.g., the sidebar) */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0; /* Vertical breathing room */
+    box-sizing: border-box;
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: sans-serif;
+    color: #ecf0f1; /* Light text for dark mode */
+}
+
+.slider-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.slider-value {
+    font-size: 0.85rem;
+    color: #bdc3c7;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* --- The Range Input Styling --- */
+
+.slider-input {
+    -webkit-appearance: none; /* Remove default styling */
+    width: 100%; /* RESPONSIVE: Fills the wrapper */
+    height: 6px;
+    background: #34495e; /* Empty track color */
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+    
+    /* This creates the "Filled" effect on the left side of the thumb */
+    background-image: linear-gradient(#3498db, #3498db);
+    background-repeat: no-repeat;
+}
+
+/* Chrome, Safari, Opera, Edge */
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #ecf0f1;
+    cursor: pointer;
+    box-shadow: 0 0 2px 0 rgba(0,0,0,0.5);
+    transition: transform 0.1s ease;
+}
+
+/* Hover Effect */
+.slider-input::-webkit-slider-thumb:hover {
+    transform: scale(1.2); /* Grow slightly on hover */
+    background: #fff;
+}
+
+/* Firefox Support */
+.slider-input::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border: none;
+    border-radius: 50%;
+    background: #ecf0f1;
+    cursor: pointer;
+    box-shadow: 0 0 2px 0 rgba(0,0,0,0.5);
+}

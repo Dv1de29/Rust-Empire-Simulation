@@ -1,0 +1,28 @@
+.game-page {
+    width: 100%;
+    flex: 1; 
+    
+    display: grid;
+    grid-template-columns: 300px 1fr;
+
+    grid-template-rows: 1fr; 
+    
+    min-height: 0;
+}
+
+aside.settings-aside {
+    background-color: var(--bg-settings);
+    padding: 2rem 1rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    min-width: 0;
+}
+
+aside.map-aside {
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--bg-map);
+}

@@ -1,0 +1,30 @@
+:root{
+    --bg-map: rgb(16, 16, 40);
+    --bg-sliders: rgb(16, 16, 40);
+    --bg-settings: rgb(28, 28, 69);
+    --bg-empire-place: rgb(76, 126, 162);
+}
+
+
+.App {
+    display: flex;
+    flex-flow: column;
+    width: 100vw;
+    
+    /* CHANGE 1: Use min-height instead of height */
+    /* This ensures it fills the screen at start, but CAN grow taller */
+    min-height: 100vh; 
+}
+
+.app-main {
+    display: flex;
+    flex-direction: column;
+    
+    width: 100%;
+    background-color: black;
+
+    /* CHANGE 2: flex: 1 pushes the bottom down */
+    /* It takes up all available space, but will expand if children are huge */
+    flex: 1; 
+    
+}

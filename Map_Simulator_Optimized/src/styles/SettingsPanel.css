@@ -1,0 +1,208 @@
+.header-info {
+    display: flex;
+    align-items: start;
+}
+
+.header-info span {
+    font-size: 24px;
+    color: #fff;
+    padding: 1rem 0 2rem 0;
+}
+
+.sliders {
+    padding: 0 1rem 1rem 1rem;
+    background-color: var(--bg-sliders);
+    border-radius: 8px; /* Optional: adds polish */
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.empires-label {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.empires {
+    padding: 0.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px; /* Added gap for better separation */
+}
+
+.empire-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-empire-place, #2a2a2a); /* Fallback color */
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.empire-wrapper span {
+    color: #fff;
+    font-weight: 500;
+}
+
+/* Hover state for non-active items */
+.empire-wrapper:hover {
+    background-color: #3a3a3a;
+    transform: translateY(-2px);
+}
+
+/* --- THE ACTIVE STATE (RED) --- */
+.empire-wrapper.active {
+    background-color: #d32f2f; /* Standard Material Red */
+    border-color: #ff6659;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.empire-wrapper.active span {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* --- COMMIT BUTTON --- */
+.actions {
+    padding: 1rem 0.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.commit-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #4CAF50; /* Green for "Go/Save" */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.commit-btn:hover {
+    background-color: #45a049;
+}
+
+.commit-btn:active {
+    transform: scale(0.98);
+}
+
+.add-btn{
+    width: 40%;
+    padding: 12px;
+    background-color: #4c6faf; /* Green for "Go/Save" */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.del-btn{
+    width: 40%;
+    padding: 12px;
+    background-color: #af4c56; /* Green for "Go/Save" */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+
+/* --- MAP SELECTION (DROPDOWN) --- */
+.map-selection {
+    width: 100%;
+    padding: 0 1rem 1.5rem 1rem; /* Space below header, above sliders */
+}
+
+.map-selection select {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #fff;
+    background-color: var(--bg-sliders, #2a2a2a); /* Matches slider bg */
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    appearance: none; /* Removes default OS arrow */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.map-selection select:hover {
+    border-color: #666;
+}
+
+.map-selection select:focus {
+    outline: none;
+    border-color: #4CAF50; /* Green highlight on focus */
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* --- COLOR CHOICE SECTION --- */
+.color-choice {
+    width: 100%;
+    margin: 1rem 0;
+    padding: 10px;
+    background-color: var(--bg-sliders, #2a2a2a);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space between label and input */
+}
+
+/* Optional: Add a label text before the input using CSS if you don't have one in JSX */
+.color-choice::before {
+    content: "Empire Color";
+    color: #ccc;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Style the actual input */
+.color-choice input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    width: 50px;
+    height: 35px;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+}
+
+/* Color Swatch (Chrome/Edge/Safari) */
+.color-choice input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0; 
+}
+
+.color-choice input[type="color"]::-webkit-color-swatch {
+    border: 2px solid #555;
+    border-radius: 6px;
+}
+
+/* Color Swatch (Firefox) */
+.color-choice input[type="color"]::-moz-color-swatch {
+    border: 2px solid #555;
+    border-radius: 6px;
+}

@@ -1,14 +1,15 @@
 import React, { useRef, useEffect } from "react";
 
-import { World } from "rust_simulator";
+import { useSettingsController } from "../context/Context";
 
-interface MapLayerProps {
-    world: World | null; // We need the world instance to ask for pointers
-    memory: WebAssembly.Memory | null
-}
 
-function MapLayer({ world, memory }: MapLayerProps) {
+
+function MapLayer() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    const controller = useSettingsController();
+    const world = controller.world;
+    const memory = controller.memory;
 
     useEffect(() => {
         const canvas = canvasRef.current;

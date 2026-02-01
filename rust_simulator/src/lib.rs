@@ -1,11 +1,12 @@
 use std::{cmp::Ordering, collections::{BinaryHeap, HashMap}, u32};
 
 use wasm_bindgen::prelude::*;
-use rayon::{prelude::*}; // <--- 1. Import Rayon traits
+use rayon::{prelude::*}; 
 
-// --- EXPOSE THREAD POOL INITIALIZER ---
-// JavaScript needs to call this once to spawn the workers
 pub use wasm_bindgen_rayon::init_thread_pool;
+
+mod utlis;
+use utlis::INTI_COSTS;
 
 
 #[wasm_bindgen]
@@ -19,6 +20,59 @@ macro_rules! console_log {
     // This pattern matches arguments exactly like println! does
     ($($t:tt)*) => (log(&format!($($t)*)))
 }
+
+
+
+/////helper functions 
+     // Maps t (0.0 to 1.0) to a u32 Color (0xAABBGGRR Little Endian)
+    // 0.0 = Red (Hot/Close)
+    // 0.5 = Green
+    // 1.0 = Dark Blue (Cold/Far)
+    fn heat_map_color(t: f32) -> u32 {
+        let r: u32;
+        let g: u32;
+        let b: u32;
+        let a: u32 = 0xFF; // Full Alpha
+
+        // Multi-stop Gradient: Red -> Yellow -> Green -> Cyan -> Blue
+        if t < 0.25 {
+            // Red to Yellow
+            // R: 255, G: 0->255, B: 0
+            let seg = t / 0.25;
+            r = 255;
+            g = (255.0 * seg) as u32;
+            b = 0;
+        } else if t < 0.5 {
+            // Yellow to Green
+            // R: 255->0, G: 255, B: 0
+            let seg = (t - 0.25) / 0.25;
+            r = (255.0 * (1.0 - seg)) as u32;
+            g = 255;
+            b = 0;
+        } else if t < 0.75 {
+            // Green to Cyan
+            // R: 0, G: 255, B: 0->255
+            let seg = (t - 0.5) / 0.25;
+            r = 0;
+            g = 255;
+            b = (255.0 * seg) as u32;
+        } else {
+            // Cyan to Dark Blue
+            // R: 0, G: 255->0, B: 255->139
+            let seg = (t - 0.75) / 0.25;
+            r = 0;
+            g = (255.0 * (1.0 - seg)) as u32;
+            // Fade Blue (255) down to DarkBlue (139)
+            b = (255.0 - (116.0 * seg)) as u32; 
+        }
+
+        // Combine into u32 (Little Endian: 0xAABBGGRR)
+        (a << 24) | (b << 16) | (g << 8) | r
+    }
+
+
+
+
 
 
 
@@ -102,7 +156,7 @@ impl Terrain {
 }
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Empire{
     pub id: u32,
     pub color: u32,
@@ -127,8 +181,10 @@ pub struct World {
     owners: Vec<u32>,
     terrain_buffer: Vec<u32>,
     ownership_buffer: Vec<u32>,
+    dist_buffer: Vec<u32>,
     
     dist_vector: Vec<u32>,
+    dist_map: Vec<u32>,
     empires: HashMap<u32, Empire>,
 }
 
@@ -142,6 +198,7 @@ impl World {
         let size = width * height;
 
         let dist_vector = vec![u32::MAX; width* height];
+        let dist_map = vec![u32::MAX; size];
         let empires = HashMap::new();
 
         let mut tiles = Vec::with_capacity(size);
@@ -158,8 +215,10 @@ impl World {
             owners: vec![0; size],
             terrain_buffer: vec![0xFF000000; size],
             ownership_buffer: vec![0x00000000; size],
+            dist_buffer: vec![0x0000000; size],
 
             dist_vector,
+            dist_map,
             empires
         };
 
@@ -181,6 +240,10 @@ impl World {
 
     pub fn get_ownership_buffer_ptr(&self) -> *const u32 {
         self.ownership_buffer.as_ptr()
+    }
+
+    pub fn get_dist_buffer_ptr(&self) -> *const u32 {
+        self.dist_buffer.as_ptr()
     }
 
     // --- PARALLEL RENDERER ---
@@ -214,6 +277,39 @@ impl World {
                 }
             });
     }
+
+    pub fn render_dist_map(&mut self, max_dist_option: Option<u32>) {
+        let max_dist_f: f32 = match max_dist_option {
+            Some(val) => val as f32,
+            None => {
+                let max_found = self.dist_map
+                    .par_iter()
+                    .filter(|&&d| d != u32::MAX)
+                    .max()
+                    .cloned()
+                    .unwrap_or(1);
+                    
+                max_found as f32
+            }
+        };
+
+        // 2. Render Pixels in Parallel
+        self.dist_buffer
+            .par_iter_mut()
+            .zip(self.dist_map.par_iter())
+            .for_each(|(pixel, &dist)| {
+                if dist == u32::MAX {
+                    // Unreachable areas (e.g. Oceans if you can't swim) -> Transparent
+                    *pixel = 0x00000000; 
+                } else {
+                    // Normalize distance 0.0 to 1.0
+                    let t = dist as f32 / max_dist_f;
+                    *pixel = heat_map_color(t);
+                }
+            });
+    }
+
+
 
 
     ///////////////Modifications to empires
@@ -351,5 +447,79 @@ impl World{
                 }
             }
         }
+    }
+
+    
+}
+
+
+#[wasm_bindgen]
+impl World{
+    pub fn djisktra_dist_point(&mut self, start_x: usize, start_y: usize, empire_id: u32) {
+        let width = self.width;
+        let height = self.height;
+        let size = width * height;
+        let start_index = start_y * width + start_x;
+
+        for i in 0..size {
+            self.dist_map[i] = u32::MAX;
+        }
+
+        // Get empire costs
+        let costs = match self.empires.get(&empire_id) {
+            Some(e) => e.costs,
+            None => {
+                console_log!("Empire ID {} not found", empire_id);
+                console_log!("Empire settings: {:?}", self.empires);
+                INTI_COSTS
+            }
+        };
+
+        // Dijkstra setup
+        let mut pq = BinaryHeap::<State>::new();
+        let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+
+        // Start point
+        pq.push(State { cost: 0, index: start_index });
+        self.dist_map[start_index] = 0;
+
+        while let Some(State { cost, index }) = pq.pop() {
+            // If we found a shorter path previously, skip
+            if cost > self.dist_map[index] {
+                continue;
+            }
+
+            let x = (index % width) as i32;
+            let y = (index / width) as i32;
+            let current_terrain = self.tiles[index];
+
+            for (dx, dy) in directions {
+                let nx = x + dx;
+                let ny = y + dy;
+
+                if nx < 0 || nx >= (width as i32) || ny < 0 || ny >= (height as i32) {
+                    continue;
+                }
+
+                let neib_idx = (ny as usize * width) + (nx as usize);
+                let neib_terrain = self.tiles[neib_idx];
+
+                // Calculate cost using empire settings and transition logic
+                let move_cost = costs[neib_terrain as usize];
+                let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
+                let penalty = if is_transition { costs[1] * 3 } else { 0 }; // using Water (index 1) cost for penalty base
+                
+                // Add saturation check to prevent overflow
+                let new_cost = cost.saturating_add(move_cost).saturating_add(penalty);
+
+                // If this path is better, record it and push to queue
+                if new_cost < self.dist_map[neib_idx] {
+                    self.dist_map[neib_idx] = new_cost;
+                    pq.push(State { cost: new_cost, index: neib_idx });
+                }
+            }
+        }
+        
+        console_log!("Finished calculating distance map from point ({}, {})", start_x, start_y);
     }
 }

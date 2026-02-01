@@ -4,10 +4,11 @@ import { SlidersSettings } from "../types/types";
 import Slider from "./Slider";
 import '../styles/SettingsPanel.css';
 import ColorInput from "./ColorInput";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 
 function SettingsPanel(){
+    const [isListCollapsed, setIsListCollapsed] = useState<boolean>(false);
 
     const draftEmpires = useSettingsSelector((state) => state.draftEmpires);
     const activeEmpireId = useSettingsSelector((state) => state.activeEmpireId);
@@ -75,7 +76,7 @@ function SettingsPanel(){
                     <option value="east_asia">east_asia</option>
                     <option value="europe">europe</option>
                     <option value="middle_east">middle_east</option>
-                    <option value="sout_america">sout_america</option>
+                    <option value="south_america">south_america</option>
                     <option value="west_mediteranean">west_mediteranean</option>
                     <option value="scandinavia">scandinavia</option>
                 </select>
@@ -107,35 +108,46 @@ function SettingsPanel(){
             </div>
 
             {/* Empire List Section */}
-            <div className="empires-label">Empires:</div>
-            <div className="empires">
-                {draftEmpires.map(emp => (
-                    <div 
-                        key={emp.id} 
-                        // Apply 'active' class if this is the currently selected empire
-                        className={`empire-wrapper ${emp.id === activeEmpireId ? 'active' : ''}`}
-                        onClick={() => controller.setActiveEmpireId(emp.id)}
-                    >
-                        <span>{emp.name}</span>
-                    </div>
-                ))}
+            {/* --- COLLAPSIBLE HEADER --- */}
+            <div 
+                className="empires-header" 
+                onClick={() => setIsListCollapsed(!isListCollapsed)}
+            >
+                <span className="label-text">Empires:</span>
+                
+                {/* Arrow Icon: Rotates based on state */}
+                <span className={`arrow-icon ${isListCollapsed ? 'collapsed' : ''}`}>
+                    ▼
+                </span>
             </div>
 
-            {/* Add empire button  */}
-            <div className="actions">
-                <button
-                className="add-btn"
-                    onClick={handleAddEmpire}
-                >
-                    Add Empire
-                </button>
-                <button
-                    className="del-btn"
-                    onClick={handleDeleteEmpire}
-                >
-                    Delete Empire
-                </button>
-            </div>
+            {/* --- COLLAPSIBLE CONTENT --- */}
+            {!isListCollapsed && (
+                <div className="collapsible-content">
+                    <div className="empires">
+                        {draftEmpires.map(emp => (
+                            <div 
+                                key={emp.id} 
+                                className={`empire-wrapper ${emp.id === activeEmpireId ? 'active' : ''}`}
+                                onClick={() => controller.setActiveEmpireId(emp.id)}
+                            >
+                                <div style={{width: 10, height: 10, background: emp.color, borderRadius: '50%', marginRight: 5}}></div>
+                                <span>{emp.name}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Add/Delete Buttons belong inside the list logic */}
+                    <div className="actions">
+                        <button className="add-btn" onClick={handleAddEmpire}>
+                            Add Empire
+                        </button>
+                        <button className="del-btn" onClick={handleDeleteEmpire}>
+                            Delete Empire
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Commit Button */}
             <div className="actions">

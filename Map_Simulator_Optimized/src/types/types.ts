@@ -35,5 +35,6 @@ export interface EmpireConfig{
     id: number,
     name: string,
     color: string,
+    alreadyPlaced: boolean,
     settings: SettingsValue,
 }

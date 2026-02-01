@@ -206,3 +206,64 @@
     border: 2px solid #555;
     border-radius: 6px;
 }
+
+
+
+/* Replace your old .empires-label with this */
+.empires-header {
+    display: flex;
+    justify-content: space-between; /* Pushes arrow to the right */
+    align_items: center;
+    
+    padding: 0.5rem 1rem; /* Give it some click area */
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle hover hint bg */
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    user-select: none; /* Prevents text highlighting when clicking fast */
+}
+
+.empires-header:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.label-text {
+    color: #ccc;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* The Arrow */
+.arrow-icon {
+    color: #fff;
+    font-size: 12px;
+    transition: transform 0.3s ease; /* Smooth rotation */
+}
+
+/* When collapsed (Right Arrow state) */
+/* We rotate the down arrow -90deg to point right */
+.arrow-icon.collapsed {
+    transform: rotate(-90deg);
+}
+
+/* Optional: Animation for the content opening */
+.collapsible-content {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Adjust the commit section to have space if list is collapsed */
+.commit-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #444; /* visual separator */
+}

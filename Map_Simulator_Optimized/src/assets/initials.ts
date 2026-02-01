@@ -2,9 +2,9 @@ import type { EmpireConfig, SettingsValue } from "../types/types";
 
 export const INITIAL_SETTINGS: SettingsValue = {
     // --- The Easy Stuff ---
-    plain: 10,     // Your baseline speed.
-    forest: 15,    // Slight slowdown, but fine.
-    river: 20,     // A bit slow, but acceptable.
+    plain: 15,     // Your baseline speed.
+    forest: 20,    // Slight slowdown, but fine.
+    river: 10,     
 
     // --- The Moderate Barriers ---
     desert: 60,    // Unpleasant, but traversable.
@@ -12,7 +12,7 @@ export const INITIAL_SETTINGS: SettingsValue = {
     // --- The Hard Barriers ---
     // Water is now CHEAPER than Mountains to "be inside", 
     // but the Transition Penalty (3x) makes ENTERING it hard.
-    water: 30,     
+    water: 25,     
     
     // Mountains are hard to move through continually.
     mountain: 80,  
@@ -29,6 +29,7 @@ export const STARTING_EMPIRES: EmpireConfig[] = [
     id: 1,
     name: "Empire 1",
     color: "#FF5733",
+    alreadyPlaced: false,
     settings: INITIAL_SETTINGS,
   }
 ];

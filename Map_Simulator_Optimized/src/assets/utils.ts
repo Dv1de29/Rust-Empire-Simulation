@@ -43,6 +43,26 @@ export const drawTerrainLayer = (
     ctx.putImageData(imageData, 0, 0);
 };
 
+// Helper to draw the Distance Buffer
+export const drawDistanceLayer = (
+    ctx: CanvasRenderingContext2D,
+    world: World,
+    memory: WebAssembly.Memory
+) => {
+    const width = world.width();
+    const height = world.height();
+    const ptr = world.get_dist_buffer_ptr(); // <--- The new pointer we made in Rust
+
+    const data = new Uint8ClampedArray(
+        memory.buffer,
+        ptr,
+        width * height * 4
+    );
+
+    const imageData = new ImageData(data, width, height);
+    ctx.putImageData(imageData, 0, 0);
+};
+
 
 // Converts a Hex string (#RRGGBB) to the Integer format Rust expects (0xAABBGGRR)
 export function hexToColorInt(hex: string) {

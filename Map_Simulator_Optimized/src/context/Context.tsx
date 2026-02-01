@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 
 
 import type { EmpireConfig, SettingsValue } from "../types/types";
@@ -8,17 +8,40 @@ import { STARTING_EMPIRES, INITIAL_SETTINGS } from "../assets/initials";
 
 
 
+//// from rust
+
+import init, { initThreadPool, World } from "rust_simulator";
+
+// Go up: components -> src -> react_app -> root -> rust_simulator -> pkg
+// (Adjust the number of "../" based on your exact folder depth)
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import wasmUrl from "../../../rust_simulator/pkg/rust_simulator_bg.wasm?url";
+
+import { drawOwnershipLayer, fetchMap, hexToColorInt } from "../assets/utils";
+
+
+
+
+
 interface SettingsState{
     draftEmpires: EmpireConfig[],
     commitEmpires: EmpireConfig[],
     activeEmpireId: number,
     activeMap: string,
+
+    isLoadingMap: boolean,
+    isSystemReady: boolean;
+    ownershipRev: number,
 }
 
 
 class SettingsStore{
     private state: SettingsState;
     private listeners: Set<() => void>;
+
+    public world: World | null = null;
+    public memory: WebAssembly.Memory | null = null;
     
 
     constructor(initialEmpires: EmpireConfig[] = STARTING_EMPIRES){
@@ -26,11 +49,54 @@ class SettingsStore{
             draftEmpires: initialEmpires,
             commitEmpires: initialEmpires,
             activeEmpireId: 1,
-            activeMap: "world"
+            activeMap: "world",
+            isLoadingMap: false,
+            isSystemReady: false,
+            ownershipRev: 0,
         };
         this.listeners = new Set();
     }
 
+    async bootSystem(){
+        if ( this.state.isSystemReady ) return
+
+        try{
+            const wasm = await init(wasmUrl)
+
+            try{
+                await initThreadPool(navigator.hardwareConcurrency);
+            } catch(e){
+                console.warn("Thread pool already active:", e);
+            }
+
+            this.memory = wasm.memory;
+
+            await this.loadMapInternal(this.state.activeMap);
+
+            this.state = {...this.state, isSystemReady: true };
+            this.emitChange();
+
+        }catch(e){
+            console.error("Failed to boot WASM", e);
+        }
+    }
+
+    private async loadMapInternal(mapName: string){
+        this.state = {...this.state, isLoadingMap: true};
+        this.emitChange();
+
+        try{
+            const mapData = await fetchMap(mapName);
+            if ( !mapData) throw new Error("Couldn't load the mapData");
+
+            this.world = World.new(mapData);
+        } catch(e){
+            console.warn("Error loading the mapData: ", e);
+        } finally{
+            this.state = {...this.state, isLoadingMap: false};
+            this.emitChange();
+        }
+    }
     
     updateDraftsettings = (empireId: number, key: keyof SettingsValue, value: number) => {
         console.log(`Updating key ${key}, wiht value ${value} of empire ${empireId}`);
@@ -51,6 +117,7 @@ class SettingsStore{
         this.emitChange();
     }
 
+
     updateEmpireName(empireId: number, name: string){
         const newDrafts = this.state.draftEmpires.map(emp => {
             if ( emp.id === empireId ){
@@ -67,15 +134,15 @@ class SettingsStore{
 
     updateEmpireColor(empireId: number, color: string){
         const newDrafts = this.state.draftEmpires.map(emp => {
-            if ( emp.id === empireId ){
-                return {
-                    ...emp,
-                    color: color,
-                }
-            }
-            return emp;
+            return emp.id === empireId ? { ...emp, color } : emp;
         })
-        this.state = { ...this.state, draftEmpires: newDrafts };
+        
+        if ( this.world ){
+            const colorInt = hexToColorInt(color);
+            this.world.set_empire_color(empireId, colorInt);
+        }
+        
+        this.state = { ...this.state, draftEmpires: newDrafts, ownershipRev: this.state.ownershipRev + 1 };
         this.emitChange();
     }
 
@@ -87,6 +154,8 @@ class SettingsStore{
     setActiveMap(map: string){
         this.state = { ...this.state, activeMap: map };
         this.emitChange();
+
+        this.loadMapInternal(map);
     }
     
     addEmpire(defaultSettings: SettingsValue = INITIAL_SETTINGS){
@@ -99,6 +168,7 @@ class SettingsStore{
             id: newId,
             name: `Empire ${newId}`,
             color: newColor,
+            alreadyPlaced: false,
             settings: defaultSettings,
         }
         
@@ -110,7 +180,21 @@ class SettingsStore{
     
     deleteEmpire(id: number){
         const newDrafts = this.state.draftEmpires.filter(emp => emp.id !== id);
-        this.state = {...this.state, draftEmpires: newDrafts, activeEmpireId: newDrafts[0].id};
+
+        this.world?.delete_empire(id)
+
+        this.state = {...this.state, draftEmpires: newDrafts, activeEmpireId: newDrafts[0].id, ownershipRev: this.state.ownershipRev + 1};
+        this.emitChange();
+    }
+
+    /// placing an empire does an auto-commit
+    placeEmpire(empireId: number){
+        const newDrafts = this.state.draftEmpires.map(emp => emp.id === empireId ? {
+            ...emp,
+            alreadyPlaced: true,
+        } : emp)
+
+        this.state = {...this.state, commitEmpires: newDrafts, draftEmpires: newDrafts};
         this.emitChange();
     }
     
@@ -163,6 +247,10 @@ export const SettingsProvider = ({
     initialEmpires: EmpireConfig[],
 }) => {
     const [store] = useState(() => new SettingsStore(initialEmpires));
+
+    useEffect(() => {
+        store.bootSystem();
+    }, [store]);
 
     return (
         <Context.Provider value={store}>

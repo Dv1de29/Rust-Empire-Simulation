@@ -1,22 +1,28 @@
-import React, { useRef, useEffect, memo } from "react";
+import React, { useRef, useEffect } from "react";
 
-import { useSettingsController } from "../context/Context";
+import { useSettingsController, useSettingsSelector } from "../context/Context";
 
 import { drawOwnershipLayer, formatSettings, hexToColorInt } from "../assets/utils";
 
-import { World } from "rust_simulator";
 
-
-
-interface MapLayerProps {
-    world: World | null; // We need the world instance to ask for pointers
-    memory: WebAssembly.Memory | null
-}
-
-function MapOwnership({ world, memory }: MapLayerProps) {
+function MapOwnership() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const controller = useSettingsController();
+    const world = controller.world;
+    const memory = controller.memory;
+
+    const ownershipRevision = useSettingsSelector(state => state.ownershipRev);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+
+        if ( !world || !memory || !ctx) return;
+
+        drawOwnershipLayer(ctx, world, memory);
+    }, [world, memory, ownershipRevision])
+
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -72,10 +78,15 @@ function MapOwnership({ world, memory }: MapLayerProps) {
         const snapshot = controller.getSnapshot();
 
         const activeEmpireId = snapshot.activeEmpireId;
-        const activeEmpire = snapshot.commitEmpires.find(emp => emp.id === activeEmpireId);
+        const activeEmpire = snapshot.draftEmpires.find(emp => emp.id === activeEmpireId);
 
         if (!activeEmpire) {
             console.warn("No active ampire");
+            return;
+        }
+
+        if ( activeEmpire.alreadyPlaced) {
+            alert("This empire is already placed, delete it or select another empire");
             return;
         }
 
@@ -113,6 +124,7 @@ function MapOwnership({ world, memory }: MapLayerProps) {
         console.log(activeEmpire);
 
         world.add_empire(safeX, safeY, activeEmpireId, empire_color, activeEmpire.settings.size, settings)
+        controller.placeEmpire(activeEmpireId);
         const ctx = canvas.getContext('2d');
         if ( !ctx ) return;
         drawOwnershipLayer(ctx, world, memory);       
@@ -123,7 +135,7 @@ function MapOwnership({ world, memory }: MapLayerProps) {
 
     return (
         <canvas 
-            className="map-canvas layer-canvas"
+            className="map-canvas owner-canvas"
             ref={canvasRef}
             width={world.width()}
             height={world.height()}

@@ -30,6 +30,7 @@ export const STARTING_EMPIRES: EmpireConfig[] = [
     name: "Empire 1",
     color: "#FF5733",
     alreadyPlaced: false,
+    capital: null,
     settings: INITIAL_SETTINGS,
   }
 ];

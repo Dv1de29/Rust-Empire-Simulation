@@ -12,65 +12,56 @@ function MapOwnership() {
     const world = controller.world;
     const memory = controller.memory;
 
+    const commitEmpires = useSettingsSelector(state => state.commitEmpires);
     const ownershipRevision = useSettingsSelector(state => state.ownershipRev);
 
+
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
 
-        if ( !world || !memory || !ctx) return;
+        if (!world || !memory || !ctx || !canvas) return;
 
+
+        // B. Draw the Pixels to Canvas (Base Layer)
         drawOwnershipLayer(ctx, world, memory);
-    }, [world, memory, ownershipRevision])
 
+        // C. Draw the Overlays (Dots & Names)
+        commitEmpires.forEach(emp => {
+            // Only draw if it is placed AND has coordinates
+            if (emp.alreadyPlaced && emp.capital) {
+                const { x, y } = emp.capital;
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
+                ctx.save(); 
 
-        // Guard clauses: If anything is missing, stop.
-        if (!canvas || !ctx ) {
-            console.warn("Returned from the useEffect!!!!!");
-            return;
-        }
+                // Draw Dot
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2); 
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "#000000";
+                ctx.stroke();
 
-        if ( !world){
-            console.warn("No world so exited from useEffect");
-            return;
-        }
+                // Draw Name
+                ctx.font = "bold 11px sans-serif"; 
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                
+                // Outline (Stroke) makes text readable on any background
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+                ctx.lineWidth = 3;
+                ctx.strokeText(emp.name, x, y - 5);
 
-        if ( !memory ){
-            console.warn("No memory so exited from useEffect");
-            return;
-        }
+                // Fill (Text Color)
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillText(emp.name, x, y - 5);
 
-        // 1. Ask Rust to calculate pixels (if not already done)
-        // This fills the 'terrain_buffer' in Rust memory
-        world.render_ownership(); 
+                ctx.restore();
+            }
+        });
 
-        // 2. Get the dimensions directly from Rust to be safe
-        const width = world.width();
-        const height = world.height();
-
-        // 3. Get the POINTER to the memory location
-        const ptr = world.get_ownership_buffer_ptr();
-
-        // 4. Create a JavaScript View into WASM Memory
-        // Uint8ClampedArray is what HTML Canvas expects (RGBA, 0-255)
-        // Length = width * height * 4 bytes (R, G, B, A)
-        const data = new Uint8ClampedArray(
-            memory.buffer, // The entire WASM RAM
-            ptr,
-            width * height * 4
-        );
-
-        // 5. Create ImageData and Draw
-        // This is extremely fast because 'data' is just a view, not a copy
-        const imageData = new ImageData(data, width, height);
-        
-        ctx.putImageData(imageData, 0, 0);
-
-    }, [world, memory]);
+    }, [world, memory, ownershipRevision, commitEmpires])
 
     const handleClick = (e: MouseEvent<HTMLCanvasElement>) => {
         if (!world || !canvasRef.current || !memory) return;
@@ -124,10 +115,10 @@ function MapOwnership() {
         console.log(activeEmpire);
 
         world.add_empire(safeX, safeY, activeEmpireId, empire_color, activeEmpire.settings.size, settings)
-        controller.placeEmpire(activeEmpireId);
-        const ctx = canvas.getContext('2d');
-        if ( !ctx ) return;
-        drawOwnershipLayer(ctx, world, memory);       
+        // const ctx = canvas.getContext('2d');
+        // if ( !ctx ) return;
+        // drawOwnershipLayer(ctx, world, memory);       
+        controller.placeEmpire(activeEmpireId, safeX, safeY);
     }
 
 

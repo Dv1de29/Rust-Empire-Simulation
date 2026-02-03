@@ -152,6 +152,12 @@ class SettingsStore{
     }
 
     setActiveMap(map: string){
+        const newDrafts = this.state.draftEmpires.map(emp => {
+            return {
+                ...emp,
+                alreadyPlaced: false,
+            }
+        })
         this.state = { ...this.state, activeMap: map };
         this.emitChange();
 
@@ -169,6 +175,7 @@ class SettingsStore{
             name: `Empire ${newId}`,
             color: newColor,
             alreadyPlaced: false,
+            capital: null,
             settings: defaultSettings,
         }
         
@@ -188,10 +195,11 @@ class SettingsStore{
     }
 
     /// placing an empire does an auto-commit
-    placeEmpire(empireId: number){
+    placeEmpire(empireId: number, x: number, y: number){
         const newDrafts = this.state.draftEmpires.map(emp => emp.id === empireId ? {
             ...emp,
             alreadyPlaced: true,
+            capital: {x: x, y: y},
         } : emp)
 
         this.state = {...this.state, commitEmpires: newDrafts, draftEmpires: newDrafts};

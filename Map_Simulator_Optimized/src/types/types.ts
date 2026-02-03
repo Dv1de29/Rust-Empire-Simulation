@@ -21,13 +21,13 @@ interface SliderConfig {
 // 3. Create the constant. 
 // Using Record<SliderKey, SliderConfig> forces you to define every key.
 export const SlidersSettings: Record<SliderKey, SliderConfig> = {
-    water:    { label: "Water",    min: 0, max: 100 },
-    river:    { label: "River",    min: 0, max: 100 },
-    plain:    { label: "Plain",    min: 0, max: 100 },
-    mountain: { label: "Mountain", min: 0, max: 100 },
-    desert:   { label: "Desert",   min: 0, max: 100 },
-    forest:   { label: "Forest",   min: 0, max: 100 },
-    ice:      { label: "Ice",      min: 0, max: 100 },
+    water:    { label: "Water",    min: 1, max: 100 },
+    river:    { label: "River",    min: 1, max: 100 },
+    plain:    { label: "Plain",    min: 1, max: 100 },
+    mountain: { label: "Mountain", min: 1, max: 100 },
+    desert:   { label: "Desert",   min: 1, max: 100 },
+    forest:   { label: "Forest",   min: 1, max: 100 },
+    ice:      { label: "Ice",      min: 1, max: 100 },
     size:     { label: "Empire size", min: 100, max: 10000},
 };
 
@@ -36,5 +36,6 @@ export interface EmpireConfig{
     name: string,
     color: string,
     alreadyPlaced: boolean,
+    capital: {x: number, y: number} | null,
     settings: SettingsValue,
 }

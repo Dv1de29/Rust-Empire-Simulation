@@ -406,7 +406,10 @@ impl World{
         let mut claimed_count: u32 = 0;
 
         while let Some(State{cost, index}) = pq.pop() {
-            if claimed_count >= n {break;}
+            if claimed_count >= n {
+                console_log!("Finished {} terrains", n);
+                break;
+            }
 
             if cost > dist_local[index]{continue;}
 
@@ -455,7 +458,7 @@ impl World{
 
 #[wasm_bindgen]
 impl World{
-    pub fn djisktra_dist_point(&mut self, start_x: usize, start_y: usize, empire_id: u32) {
+    pub fn djisktra_dist_point(&mut self, start_x: usize, start_y: usize, empire_id: u32, settings: Vec<u32>) {
         let width = self.width;
         let height = self.height;
         let size = width * height;
@@ -466,14 +469,20 @@ impl World{
         }
 
         // Get empire costs
-        let costs = match self.empires.get(&empire_id) {
-            Some(e) => e.costs,
-            None => {
-                console_log!("Empire ID {} not found", empire_id);
-                console_log!("Empire settings: {:?}", self.empires);
-                INTI_COSTS
-            }
-        };
+        // let costs = match self.empires.get(&empire_id) {
+        //     Some(e) => e.costs,
+        //     None => {
+        //         console_log!("Empire ID {} not found", empire_id);
+        //         console_log!("Empire settings: {:?}", self.empires);
+        //         INTI_COSTS
+        //     }
+        // };
+
+        let mut costs: [u32; 8] = [9999; 8];
+
+        for (i, &cost) in settings.iter().enumerate(){
+            costs[i] = cost;
+        }
 
         // Dijkstra setup
         let mut pq = BinaryHeap::<State>::new();

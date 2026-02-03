@@ -407,7 +407,6 @@ impl World{
 
         while let Some(State{cost, index}) = pq.pop() {
             if claimed_count >= n {
-                console_log!("Finished {} terrains", n);
                 break;
             }
 
@@ -420,6 +419,7 @@ impl World{
                 self.owners[index] = empire_id;
                 self.dist_vector[index] = cost;
                 claimed_count += 1;
+                console_log!("Placed at {}", index);
             }
 
             let x: i32 = (index % width) as i32;
@@ -450,6 +450,8 @@ impl World{
                 }
             }
         }
+
+        console_log!("{}", self.owners[37824]);
     }
 
     

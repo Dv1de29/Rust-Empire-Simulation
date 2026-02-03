@@ -42,6 +42,8 @@ class SettingsStore{
 
     public world: World | null = null;
     public memory: WebAssembly.Memory | null = null;
+
+    private isBooting = false;
     
 
     constructor(initialEmpires: EmpireConfig[] = STARTING_EMPIRES){
@@ -58,7 +60,10 @@ class SettingsStore{
     }
 
     async bootSystem(){
-        if ( this.state.isSystemReady ) return
+        if ( this.state.isSystemReady ) return;
+
+        if (this.isBooting) return;
+        this.isBooting = true;
 
         try{
             const wasm = await init(wasmUrl)
@@ -78,6 +83,8 @@ class SettingsStore{
 
         }catch(e){
             console.error("Failed to boot WASM", e);
+
+            this.isBooting = false;
         }
     }
 

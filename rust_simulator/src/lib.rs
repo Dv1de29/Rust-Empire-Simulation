@@ -21,10 +21,8 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format!($($t)*)))
 }
 
-
-
-/////helper functions 
-     // Maps t (0.0 to 1.0) to a u32 Color (0xAABBGGRR Little Endian)
+ 
+    // Maps t (0.0 to 1.0) to a u32 Color (0xAABBGGRR Little Endian)
     // 0.0 = Red (Hot/Close)
     // 0.5 = Green
     // 1.0 = Dark Blue (Cold/Far)
@@ -99,6 +97,32 @@ impl PartialOrd for State {
 }
 
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct AutoGrowState{
+    cost: u32,
+    index: usize,
+    empire_id: u32,
+}
+
+impl Ord for AutoGrowState{
+    fn cmp(&self, other: &Self) -> Ordering{
+        other.cost.cmp(&self.cost)
+            .then_with(|| self.index.cmp(&other.index))
+            .then_with(|| self.empire_id.cmp(&other.empire_id))
+    }
+}
+
+impl PartialOrd for AutoGrowState{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// struct asState : State{
+
+// }
+
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
@@ -161,14 +185,15 @@ pub struct Empire{
     pub id: u32,
     pub color: u32,
     pub size: u32,
+    pub cap_index: usize,
 
     //[u32;8] avoids cache misses because its fixed memory
     pub costs: [u32; 8],
 }
 
 impl Empire{
-    pub fn new(id: u32, color: u32, size: u32, settings: [u32; 8]) -> Empire{
-        Empire { id, color, costs: settings, size }
+    pub fn new(id: u32, color: u32, size: u32, settings: [u32; 8], cap_index: usize) -> Empire{
+        Empire { id, color, costs: settings, size, cap_index }
     }
 }
 
@@ -335,7 +360,7 @@ impl World {
             costs[i] = cost;
         }
 
-        let empire = Empire::new(empire_id, color, size, costs);
+        let empire = Empire::new(empire_id, color, size, costs, index);
 
         self.empires.insert(empire_id, empire);
 
@@ -533,4 +558,121 @@ impl World{
         
         console_log!("Finished calculating distance map from point ({}, {})", start_x, start_y);
     }
+
+
+    pub fn auto_grow(&mut self, size: u32) {
+        let width = self.width;
+        let height = self.height;
+
+        let mut pq = BinaryHeap::new();
+        let mut grow_counts: HashMap<u32, u32> = HashMap::new();
+        let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+
+        // --- 1. SCAN FOR FRONTIER (The Fix) ---
+        // Instead of starting at capitals, we look for owned tiles next to empty ones.
+        // This is O(MapSize), which is very fast in Rust/WASM (~5-10ms for 2000x2000).
+        for index in 0..(width * height) {
+            let owner = self.owners[index];
+            
+            // If this tile belongs to an empire...
+            if owner != 0 {
+                // Check if it's a "Frontier" tile (has empty neighbor)
+                let x = (index % width) as i32;
+                let y = (index / width) as i32;
+                let current_dist = self.dist_vector[index];
+
+                // Get costs for this empire
+                // (Unwrap safety: if owner exists in array, it must exist in map)
+                if let Some(empire) = self.empires.get(&owner) {
+                    let costs = empire.costs;
+
+                    for (dx, dy) in directions {
+                        let nx = x + dx;
+                        let ny = y + dy;
+
+                        // Bounds check
+                        if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
+                        
+                        let neib_idx = (ny as usize * width) + (nx as usize);
+                        
+                        // IF NEIGHBOR IS EMPTY -> It's a candidate for growth!
+                        if self.owners[neib_idx] == 0 {
+                            // Calculate cost to move INTO the empty tile
+                            let neib_terrain = self.tiles[neib_idx];
+                            let move_cost = costs[neib_terrain as usize];
+                            
+                            // Transition penalty logic (optional)
+                            let current_terrain = self.tiles[index];
+                            let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
+                            let penalty = if is_transition { costs[1] * 3 } else { 0 };
+
+                            let new_cost = current_dist.saturating_add(move_cost).saturating_add(penalty);
+
+                            // Push to PQ
+                            pq.push(AutoGrowState {
+                                cost: new_cost, 
+                                index: neib_idx, 
+                                empire_id: owner
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut local_dist = vec![u32::MAX; width * height];
+
+        // --- 2. THE FLOOD LOOP ---
+        while let Some(AutoGrowState { cost, index, empire_id }) = pq.pop() {
+            
+            // cant go in your teritory and for now not in
+            if self.owners[index] != 0 {continue;}
+            if cost > local_dist[index] { continue; }
+
+            let current_growth = grow_counts.entry(empire_id).or_insert(0);
+            if *current_growth >= size { continue; }
+
+            // C. Claim Logic
+            if self.owners[index] == 0 {
+
+                if self.tiles[index].is_liveable() {
+                    self.owners[index] = empire_id;
+                    self.dist_vector[index] = cost;
+                    local_dist[index] = cost;
+                    *current_growth += 1;
+                }
+
+                // D. Expand from this new tile
+                let costs = self.empires.get(&empire_id).unwrap().costs;
+                let x = (index % width) as i32;
+                let y = (index / width) as i32;
+                let current_terrain = self.tiles[index];
+
+                for (dx, dy) in directions {
+                    let nx = x + dx;
+                    let ny = y + dy;
+                    if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
+                    
+                    let neib_idx = (ny as usize * width) + (nx as usize);
+
+                    // Only expand into EMPTY space
+                    if self.owners[neib_idx] == 0 {
+                        let neib_terrain = self.tiles[neib_idx];
+                        let move_cost = costs[neib_terrain as usize];
+                        let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
+                        let penalty = if is_transition { costs[1] * 3 } else { 0 };
+
+                        let new_cost = cost.saturating_add(move_cost).saturating_add(penalty);
+
+                        // Competitive Check
+                        if new_cost < local_dist[neib_idx] {
+                            local_dist[neib_idx] = new_cost;
+                            pq.push(AutoGrowState { cost: new_cost, index: neib_idx, empire_id });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }

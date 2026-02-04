@@ -212,6 +212,20 @@ class SettingsStore{
         this.state = {...this.state, commitEmpires: newDrafts, draftEmpires: newDrafts};
         this.emitChange();
     }
+
+    triggerAutoGrow(size: number){
+        if ( !this.world) return;
+
+        this.world.auto_grow(size);
+
+        this.state = {...this.state, ownershipRev: this.state.ownershipRev + 1};
+        this.emitChange();
+    }
+
+    signalOwnershipChange(){
+        this.state = {...this.state, ownershipRev: this.state.ownershipRev + 1};
+        this.emitChange();
+    }
     
     commitSettings(){
         this.state = {

@@ -58,6 +58,10 @@ function SettingsPanel(){
         controller.commitSettings();
     }
 
+    const handleAutoGrow = () => {
+        controller.triggerAutoGrow(100);
+    }
+
     return (
         <>
             <div className="header-info">
@@ -158,6 +162,15 @@ function SettingsPanel(){
                     }}
                 >
                     Commit Changes
+                </button>
+            </div>
+
+            <div className="actions">
+                <button
+                    className="commit-btn"
+                    onClick={handleAutoGrow}
+                >
+                    Auto grow 10
                 </button>
             </div>
         </>

@@ -1,5 +1,7 @@
 .game-page {
     width: 100%;
+    height: 95vh;
+    max-height: 95vh;
     flex: 1; 
     
     display: grid;
@@ -14,7 +16,7 @@ aside.settings-aside {
     background-color: var(--bg-settings);
     padding: 2rem 1rem;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: scroll;
 
     min-width: 0;
 }

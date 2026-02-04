@@ -10,20 +10,39 @@ import { useEffect, useRef, useState } from "react";
 function SettingsPanel(){
     const [isListCollapsed, setIsListCollapsed] = useState<boolean>(false);
 
+    const [growAmount, setGrowAmount] = useState<number>(100);
+    // 2. New State to track if loop is active (Ref doesn't trigger re-render)
+    const [isGrowing, setIsGrowing] = useState<boolean>(false);
+    
     const draftEmpires = useSettingsSelector((state) => state.draftEmpires);
     const activeEmpireId = useSettingsSelector((state) => state.activeEmpireId);
     const activeMap = useSettingsSelector(state => state.activeMap);
-
+    
     const controller = useSettingsController();
-
+    
     const activeEmpire = draftEmpires.find(emp => emp.id === activeEmpireId);
+    
     const colorRef = useRef<string>(activeEmpire?.color);
+    const intervalRef = useRef<number | null>(null);
+    
 
+    ///useEffect that changes the colorRef on empire change
     useEffect(() => {
         if ( activeEmpire ){
             colorRef.current = activeEmpire.color;
         }
     }, [activeEmpireId, activeEmpire])
+    
+    /////clean-up useEffect for the interval if it exists
+    useEffect(() => {
+        return () => {
+            if ( intervalRef.current ){
+                clearInterval(intervalRef.current);
+            }
+        }
+    }, []);
+
+
 
     // Guard clause: if no empire is selected, we still might want to show the list, 
     // but for now we keep your logic or just render the list if activeEmpire is null.
@@ -59,8 +78,28 @@ function SettingsPanel(){
     }
 
     const handleAutoGrow = () => {
-        controller.triggerAutoGrow(100);
+        if ( intervalRef.current ) return;
+
+        setIsGrowing(true);
+
+        //make this with an input
+        const grow_value = growAmount;
+
+        controller.triggerAutoGrow(grow_value);
+
+        intervalRef.current = window.setInterval(() => {
+            controller.triggerAutoGrow(grow_value);
+        }, 1000);
     }
+
+    const handleStopGrow = () => {
+        if ( intervalRef.current ){
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+            setIsGrowing(false);
+        }
+    }
+
 
     return (
         <>
@@ -165,13 +204,60 @@ function SettingsPanel(){
                 </button>
             </div>
 
-            <div className="actions">
-                <button
-                    className="commit-btn"
-                    onClick={handleAutoGrow}
-                >
-                    Auto grow 10
-                </button>
+                    
+
+            <div style={{marginTop: '20px', borderTop: '1px solid #444', paddingTop: '15px'}}>
+                
+                {/* 1. The Input Field */}
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 5px'}}>
+                    <label style={{color: '#aaa', fontSize: '0.9rem'}}>Growth Amount:</label>
+                    <input 
+                        type="number" 
+                        min={5} 
+                        max={1000} 
+                        value={growAmount}
+                        onChange={(e) => {
+                            // Clamp value between 5 and 1000
+                            const val = Number(e.target.value);
+                            setGrowAmount(Math.max(5, Math.min(1000, val)));
+                        }}
+                        style={{
+                            width: '80px',
+                            background: '#2a2a2a',
+                            border: '1px solid #555',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '4px'
+                        }}
+                    />
+                </div>
+
+                {/* 2. The Buttons */}
+                <div className="actions">
+                    <button
+                        className="add-btn"
+                        style={{
+                            backgroundColor: isGrowing ? '#555' : '#4CAF50',
+                            cursor: isGrowing ? 'not-allowed' : 'pointer'
+                        }}
+                        onClick={handleAutoGrow}
+                        disabled={isGrowing}
+                    >
+                        {isGrowing ? 'Growing...' : `Auto Grow`}
+                    </button>
+                    
+                    <button
+                        className="del-btn"
+                        onClick={handleStopGrow}
+                        disabled={!isGrowing}
+                        style={{
+                            opacity: !isGrowing ? 0.5 : 1,
+                            cursor: !isGrowing ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        Stop
+                    </button>
+                </div>
             </div>
         </>
     )

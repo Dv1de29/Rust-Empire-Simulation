@@ -625,7 +625,7 @@ impl World{
         // --- 2. THE FLOOD LOOP ---
         while let Some(AutoGrowState { cost, index, empire_id }) = pq.pop() {
             
-            // cant go in your teritory and for now not in
+            // cant go in your teritory and for now not in enemy teritory
             if self.owners[index] != 0 {continue;}
             if cost > local_dist[index] { continue; }
 

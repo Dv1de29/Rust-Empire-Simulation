@@ -138,6 +138,19 @@ pub enum Terrain {
 }
 
 impl Terrain {
+    pub fn from_u8(val: u8) -> Terrain {
+        match val {
+            1 => Terrain::Water,
+            2 => Terrain::River,
+            3 => Terrain::Plain,
+            4 => Terrain::Mountain,
+            5 => Terrain::Desert,
+            6 => Terrain::Forest,
+            7 => Terrain::Ice,
+            _ => Terrain::Unknown,
+        }
+    }
+
     fn from_char(c: char) -> Terrain {
         match c {
             'W' => Terrain::Water,
@@ -444,7 +457,6 @@ impl World{
                 self.owners[index] = empire_id;
                 self.dist_vector[index] = cost;
                 claimed_count += 1;
-                console_log!("Placed at {}", index);
             }
 
             let x: i32 = (index % width) as i32;
@@ -476,7 +488,7 @@ impl World{
             }
         }
 
-        console_log!("{}", self.owners[37824]);
+        
     }
 
     
@@ -556,7 +568,7 @@ impl World{
             }
         }
         
-        console_log!("Finished calculating distance map from point ({}, {})", start_x, start_y);
+       ;
     }
 
 
@@ -675,4 +687,62 @@ impl World{
         }
     }
 
+}
+
+
+// Implementing the painting options
+#[wasm_bindgen]
+impl World {
+    // ... existing methods ...
+
+    pub fn paint_terrain_brush(
+        &mut self, 
+        center_x: i32, 
+        center_y: i32, 
+        radius: i32, 
+        terrain_val: u8
+    ) {
+        let width = self.width as i32;
+        let height = self.height as i32;
+
+        // 1. Convert the integer from JS to your Rust Enum
+        let terrain_type = Terrain::from_u8(terrain_val);
+        
+        // Get the correct color (0xAABBGGRR)
+        let color = terrain_type.get_color();
+
+        // 2. Bounding Box Optimization (Clamped to map edges)
+        let min_x = (center_x - radius).max(0);
+        let max_x = (center_x + radius).min(width - 1);
+        let min_y = (center_y - radius).max(0);
+        let max_y = (center_y + radius).min(height - 1);
+
+        let radius_sq = radius * radius;
+
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                // 3. Circle Check (Using i32 prevents underflow panic)
+                let dx = x - center_x;
+                let dy = y - center_y;
+
+                if dx * dx + dy * dy <= radius_sq {
+                    let index = (y * width + x) as usize;
+
+                    // 4. Update Logic
+                    
+                    // A. Update the logical data
+                    self.tiles[index] = terrain_type;
+
+                    // B. Update the visual buffer 
+                    // Since terrain_buffer is Vec<u32>, we assign the color directly.
+                    // This is much faster than setting 4 separate bytes.
+                    self.terrain_buffer[index] = color;
+                    
+                    // Optional: Clear ownership/distance on painted tiles?
+                    // self.owners[index] = 0;
+                    // self.dist_vector[index] = u32::MAX;
+                }
+            }
+        }
+    }
 }

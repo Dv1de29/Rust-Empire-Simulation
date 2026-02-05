@@ -33,6 +33,13 @@ interface SettingsState{
     isLoadingMap: boolean,
     isSystemReady: boolean;
     ownershipRev: number,
+
+    lastClicked: {
+        x: number,
+        y: number,
+    } | null,
+
+    activeMode: "SIMULATION" | "EDITOR",
 }
 
 
@@ -55,6 +62,8 @@ class SettingsStore{
             isLoadingMap: false,
             isSystemReady: false,
             ownershipRev: 0,
+            lastClicked: null,
+            activeMode: "SIMULATION",
         };
         this.listeners = new Set();
     }
@@ -106,7 +115,6 @@ class SettingsStore{
     }
     
     updateDraftsettings = (empireId: number, key: keyof SettingsValue, value: number) => {
-        console.log(`Updating key ${key}, wiht value ${value} of empire ${empireId}`);
         const newDrafts = this.state.draftEmpires.map(emp => {
             if ( emp.id === empireId ){
                 return{
@@ -165,7 +173,7 @@ class SettingsStore{
                 alreadyPlaced: false,
             }
         })
-        this.state = { ...this.state, activeMap: map };
+        this.state = { ...this.state, activeMap: map, commitEmpires: newDrafts, draftEmpires: newDrafts };
         this.emitChange();
 
         this.loadMapInternal(map);
@@ -224,6 +232,14 @@ class SettingsStore{
 
     signalOwnershipChange(){
         this.state = {...this.state, ownershipRev: this.state.ownershipRev + 1};
+        this.emitChange();
+    }
+
+    setLastClicked(x: number, y: number){
+        this.state = {
+            ...this.state,
+            lastClicked: {x, y},
+        }
         this.emitChange();
     }
     

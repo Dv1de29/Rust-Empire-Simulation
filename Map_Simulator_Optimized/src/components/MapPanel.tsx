@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import MapLayer from "./MapLayer";
-import MapOwnership from "./MapOwnership";
-import MapDistance from './MapDistance';
+import MapLayer from "./MapLayers/MapLayer";
+import MapOwnership from "./MapLayers/MapOwnership";
+import MapDistance from './MapLayers/MapDistance';
 import '../styles/MapPanel.css'; 
 
 import { useSettingsSelector } from '../context/Context';
+import EventsLayer from './MapLayers/EventsLayer';
 
 type MapViewMode = 'territory' | 'distance';
 
@@ -12,7 +13,8 @@ function MapPanel(){
     const isSystemReady = useSettingsSelector(state => state.isSystemReady);
     const isLoadingMap = useSettingsSelector(state => state.isLoadingMap);
     
-    // State to toggle between views
+    const appMode = useSettingsSelector(state => state.activeMode);
+
     const [viewMode, setViewMode] = useState<MapViewMode>('territory');
 
     if (!isSystemReady || isLoadingMap) return <div>Loading....</div>;
@@ -40,21 +42,23 @@ function MapPanel(){
             </div>
 
             <div className="map">
-                {/* Layer 1: Terrain is ALWAYS visible as the base */}
+                {/* Terrain layer */}
                 <div className="map-layer terrain-layer">
                     <MapLayer/>
                 </div>
 
-                {/* Layer 2: Conditional Overlay */}
+                {/* Ownership/distance layer */}
                 {viewMode === 'territory' ? (
                     <div className="map-layer ownership-layer">
-                        <MapOwnership/>
+                        <MapOwnership mode={appMode}/>
                     </div>
                 ) : (
                     <div className="map-layer distance-layer">
                         <MapDistance/>
                     </div>
                 )}
+
+                <EventsLayer viewMode={viewMode}/>
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 
-import { useSettingsController } from "../context/Context";
+import { useSettingsController } from "../../context/Context";
 
 
 
@@ -15,7 +15,6 @@ function MapLayer() {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
 
-        // Guard clauses: If anything is missing, stop.
         if (!canvas || !ctx || !world) {
             console.warn("Returned from the useEffect!!!!!");
             return;

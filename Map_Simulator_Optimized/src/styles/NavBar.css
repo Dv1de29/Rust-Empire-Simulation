@@ -1,92 +1,68 @@
-/* NavBar.css */
+
 :root {
   --nav-height: 5vh;
-  --nav-bg: #2c3e50;
-  --nav-text: #ecf0f1;
+  --nav-bg: #1e293b;  
+  --nav-text: #e2e8f0;   
+  --accent-color: #3b82f6; 
+  --hover-bg: #334155;    
 }
 
+
 .navbar {
-  height: var(--nav-height);
+  height: 5vh;
+  min-height: 40px; /* Safety check so it doesn't get too small on short screens */
   width: 100%;
   background-color: var(--nav-bg);
   color: var(--nav-text);
+  
+  /* Layout */
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  box-sizing: border-box; /* Ensures padding doesn't increase height */
-  position: relative;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  justify-content: space-between; /* Logo left, Links right */
+  align-items: center; /* Vertically center content */
+  padding: 0 2rem; /* Horizontal spacing */
+  box-sizing: border-box;
+  
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Logo Area */
+/* --- Logo Styling --- */
 .logo {
-  font-weight: bold;
-  /* Font size scales with viewport but caps at reasonable size */
-  font-size: min(1.5rem, 3.5vh); 
-  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+  user-select: none; /* Prevents highlighting text */
+  color: #ffffff;
 }
 
-/* Links (Desktop) */
+/* --- Navigation Links Container --- */
 .nav-links {
   display: flex;
-  gap: 20px;
-  height: 100%;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: var(--nav-text);
-  font-size: min(1rem, 3vh);
-  height: 100%;
-  display: flex;
+  gap: 1rem; /* Space between buttons */
+  height: 100%; /* Full height to allow buttons to fill space if needed */
   align-items: center;
-  padding: 0 10px;
-  transition: background-color 0.2s;
 }
 
-.nav-links a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Hamburger Icon (Hidden on Desktop) */
-.hamburger {
-  display: none;
-  font-size: min(1.5rem, 3.5vh);
+/* --- Individual Mode Buttons --- */
+.modes {
   cursor: pointer;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
   user-select: none;
 }
 
-/* --- Mobile / Responsive Styles --- */
-@media (max-width: 768px) {
-  .nav-links {
-    display: none; /* Hide regular links */
-    flex-direction: column;
-    position: absolute;
-    top: var(--nav-height); /* Push exactly below the 5vh bar */
-    right: 0;
-    width: 200px; /* Or 100% width */
-    background-color: #34495e;
-    box-shadow: -2px 5px 5px rgba(0,0,0,0.1);
-    z-index: 1000;
-    height: auto;
-  }
+/* Hover State (for non-active items) */
+.modes:hover {
+  background-color: var(--hover-bg);
+  color: #fff;
+}
 
-  /* Show menu when state is active */
-  .nav-links.active {
-    display: flex;
-  }
-
-  .nav-links a {
-    padding: 15px 20px;
-    width: 100%;
-    box-sizing: border-box;
-    /* Reset font size for mobile menu readability */
-    font-size: 1rem; 
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .hamburger {
-    display: block;
-  }
+/* --- Active State --- */
+.modes.active {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); /* Subtle glow */
 }

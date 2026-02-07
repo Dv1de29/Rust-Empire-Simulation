@@ -700,13 +700,14 @@ impl World {
         center_x: i32, 
         center_y: i32, 
         radius: i32, 
-        terrain_val: u8
+        terrain_val: char,
     ) {
         let width = self.width as i32;
         let height = self.height as i32;
 
         // 1. Convert the integer from JS to your Rust Enum
-        let terrain_type = Terrain::from_u8(terrain_val);
+        let terrain_type = Terrain::from_char(terrain_val.to_ascii_uppercase());
+        console_log!("Received {} transformed into {:?}", terrain_val, terrain_type);
         
         // Get the correct color (0xAABBGGRR)
         let color = terrain_type.get_color();

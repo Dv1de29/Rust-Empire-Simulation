@@ -1,12 +1,11 @@
-import { useState } from 'react';
+
 import '../styles/NavBar.css'
+import { useSettingsController, useSettingsSelector } from '../context/Context';
 
 function NavBar() {
-    const [isOpen, setIsOpen] = useState(false);
+    const activeMode = useSettingsSelector(state => state.activeMode);
 
-    const toggleMenu = () => {
-        setIsOpen(!isOpen);
-    };
+    const controller = useSettingsController();
 
     return (
         <nav className="navbar">
@@ -14,16 +13,16 @@ function NavBar() {
                 MapSim
             </div>
 
-            {/* Hamburger Icon for Mobile */}
-            <div className="hamburger" onClick={toggleMenu}>
-                {isOpen ? '✕' : '☰'}
-            </div>
-
             {/* Navigation Links */}
-            <div className={`nav-links ${isOpen ? 'active' : ''}`}>
-                <a href="#map" onClick={() => setIsOpen(false)}>Map</a>
-                <a href="#settings" onClick={() => setIsOpen(false)}>Settings</a>
-                <a href="#profile" onClick={() => setIsOpen(false)}>Profile</a>
+            <div className={`nav-links`}>
+                <div 
+                    className={`modes ${activeMode === 'SIMULATION' ? 'active' : ""}`} 
+                    onClick={() => {controller.setActiveMode('SIMULATION')}}
+                >Map</div>
+                <div 
+                    className={`modes ${activeMode === 'EDITOR' ? 'active' : ""}`}
+                    onClick={() => {controller.setActiveMode('EDITOR')}}
+                >Editor</div>
             </div>
         </nav>
     );

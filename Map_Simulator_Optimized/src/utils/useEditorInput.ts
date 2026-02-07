@@ -1,9 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
+
 import { useState } from 'react';
 import type { World } from "rust_simulator";
+import { drawOwnershipLayer } from '../assets/utils';
 
-export const useEditorInputs = (
+export const useEditorInput = (
     world: World | null, 
-    activeTerrain: number, // e.g., 0=Water, 1=Plain
+    controller: any,
+    activeTerrain: string, // e.g., 0=Water, 1=Plain
     brushSize: number
 ) => {
     const [isPainting, setIsPainting] = useState(false);
@@ -32,10 +38,12 @@ export const useEditorInputs = (
         onMouseDown: (e: React.MouseEvent, rect: DOMRect) => {
             setIsPainting(true);
             paint(e, rect); // Paint the first dot immediately
+            controller.signalTerrainChange();
         },
         onMouseMove: (e: React.MouseEvent, rect: DOMRect) => {
             if (isPainting) {
                 paint(e, rect); // Continue painting while dragging
+                controller.signalTerrainChange();
             }
         },
         onMouseUp: () => setIsPainting(false),

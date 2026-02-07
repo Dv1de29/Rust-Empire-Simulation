@@ -8,13 +8,16 @@ import { useEditorInput } from "../../utils/useEditorInput";
 function EventsLayer({viewMode} : {viewMode: "territory" | "distance"}){
     const controller = useSettingsController();
     const appMode = useSettingsSelector(state => state.activeMode);
+
+    const activeTerrain = useSettingsSelector(state => state.activeTerrain);
+    const activeRadius = useSettingsSelector(state => state.activeRadius);
+
     const world = controller.world;
     
     const containerRef = useRef<HTMLDivElement>(null);
 
     const simInput = useSimulationInput(world, controller, viewMode);
-    
-    // const editorInput = useEditorInput(world, 3, 20);
+    const editorInput = useEditorInput(world, controller, activeTerrain, activeRadius);
 
     const handleEvent = (eventName: string, e: React.MouseEvent) => {
         const container = containerRef.current;
@@ -24,12 +27,12 @@ function EventsLayer({viewMode} : {viewMode: "territory" | "distance"}){
         if (appMode === 'SIMULATION') {
             if (eventName === 'onClick') simInput.onClick(e, rect);
         } 
-        // else if (appMode === 'EDITOR') {
-        //     if (eventName === 'onMouseDown') editorInput.onMouseDown(e, rect);
-        //     if (eventName === 'onMouseMove') editorInput.onMouseMove(e, rect);
-        //     if (eventName === 'onMouseUp') editorInput.onMouseUp();
-        //     if (eventName === 'onMouseLeave') editorInput.onMouseLeave();
-        // }
+        else if (appMode === 'EDITOR') {
+            if (eventName === 'onMouseDown') editorInput.onMouseDown(e, rect);
+            if (eventName === 'onMouseMove') editorInput.onMouseMove(e, rect);
+            if (eventName === 'onMouseUp') editorInput.onMouseUp();
+            if (eventName === 'onMouseLeave') editorInput.onMouseLeave();
+        }
     };
 
     return (

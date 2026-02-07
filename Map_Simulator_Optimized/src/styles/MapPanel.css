@@ -66,10 +66,9 @@
     position: relative; 
     width: 100%;
     
-    /* FIX 4: Force a perfect square based on WIDTH */
-    aspect-ratio: 3 / 2; 
+    /* aspect-ratio: 3 / 2;  */
+    flex: 1;
     
-    /* Remove 'flex-grow: 1' to stop it from stretching vertically */
     background-color: #f0f0f0; 
     overflow: hidden;
     cursor: crosshair; 

@@ -122,3 +122,36 @@ export const fetchMap = async (mapName: string) => {
         console.error("Error: ", e);
     }
 }
+
+
+
+export type MapType = 'BLANK_WATER' | 'BLANK_GRASS' | 'NOISE';
+
+export function generateMapString(width: number, height: number, type: MapType = 'BLANK_WATER'): string {
+    let mapString = "";
+    
+    // Define characters based on your Rust parser
+    // W=Water, P=Plain, M=Mountain, F=Forest, D=Desert, etc.
+    const chars = ['W', 'P', 'M', 'F', 'D', 'S', 'I']; 
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (type === 'BLANK_WATER') {
+                mapString += 'W';
+            } else if (type === 'BLANK_GRASS') {
+                mapString += 'P';
+            } else if (type === 'NOISE') {
+                // Simple random noise
+                const randomIndex = Math.floor(Math.random() * chars.length);
+                mapString += chars[randomIndex];
+            }
+        }
+        // Add newline at end of each row (except the last one if you want to be strict, 
+        // but usually split('\n') handles trailing newlines fine)
+        if (y < height - 1) {
+            mapString += '\n';
+        }
+    }
+    
+    return mapString;
+}

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 
-import { useSettingsController } from "../../context/Context";
+import { useSettingsController, useSettingsSelector } from "../../context/Context";
 
 
 
@@ -10,6 +10,8 @@ function MapLayer() {
     const controller = useSettingsController();
     const world = controller.world;
     const memory = controller.memory;
+
+    const mapVersion = useSettingsSelector(state => state.mapVersion);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -30,48 +32,38 @@ function MapLayer() {
             return;
         }
 
-        // 1. Ask Rust to calculate pixels (if not already done)
-        // This fills the 'terrain_buffer' in Rust memory
         world.render_terrain(); 
 
-        // 2. Get the dimensions directly from Rust to be safe
         const width = world.width();
         const height = world.height();
 
-        // 3. Get the POINTER to the memory location
         const ptr = world.get_terrain_buffer_ptr();
 
-        // 4. Create a JavaScript View into WASM Memory
-        // Uint8ClampedArray is what HTML Canvas expects (RGBA, 0-255)
-        // Length = width * height * 4 bytes (R, G, B, A)
         const data = new Uint8ClampedArray(
-            memory.buffer, // The entire WASM RAM
+            memory.buffer, 
             ptr,
             width * height * 4
         );
 
-        // 5. Create ImageData and Draw
-        // This is extremely fast because 'data' is just a view, not a copy
         const imageData = new ImageData(data, width, height);
         
         ctx.putImageData(imageData, 0, 0);
 
-    }, [world]); // Re-run this only if the 'world' instance changes
+    }, [world, mapVersion]); 
 
-    // If world is null, we can't render dimensions yet
     if (!world) return null; 
 
     return (
         <canvas 
             className="map-canvas layer-canvas"
             ref={canvasRef}
-            width={world.width()}   // Set physical pixel buffer size
-            height={world.height()} // Set physical pixel buffer size
+            width={world.width()}
+            height={world.height()}
             style={{
                 width: '100%',
                 height: '100%',
                 display: 'block',
-                imageRendering: 'pixelated' // Keep edges sharp!
+                imageRendering: 'pixelated' 
             }}
         />
     );

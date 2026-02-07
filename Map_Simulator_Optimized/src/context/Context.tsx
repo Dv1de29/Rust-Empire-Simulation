@@ -18,7 +18,7 @@ import init, { initThreadPool, World } from "rust_simulator";
 // @ts-ignore
 import wasmUrl from "../../../rust_simulator/pkg/rust_simulator_bg.wasm?url";
 
-import { drawOwnershipLayer, fetchMap, hexToColorInt } from "../assets/utils";
+import { fetchMap, generateMapString, hexToColorInt } from "../assets/utils";
 
 
 
@@ -29,10 +29,18 @@ interface SettingsState{
     commitEmpires: EmpireConfig[],
     activeEmpireId: number,
     activeMap: string,
+    mapVersion: number,
+    ownershipRev: number,
+
+    EditorMapSize: {
+        map_width: number,
+        map_height: number,
+    }
+    activeTerrain: string,
+    activeRadius: number,
 
     isLoadingMap: boolean,
     isSystemReady: boolean;
-    ownershipRev: number,
 
     lastClicked: {
         x: number,
@@ -59,9 +67,13 @@ class SettingsStore{
             commitEmpires: initialEmpires,
             activeEmpireId: 1,
             activeMap: "world",
+            mapVersion: 0,
+            ownershipRev: 0,
+            EditorMapSize: {map_width: 1, map_height: 1},
+            activeTerrain: "W",
+            activeRadius: 0,
             isLoadingMap: false,
             isSystemReady: false,
-            ownershipRev: 0,
             lastClicked: null,
             activeMode: "SIMULATION",
         };
@@ -109,7 +121,25 @@ class SettingsStore{
         } catch(e){
             console.warn("Error loading the mapData: ", e);
         } finally{
-            this.state = {...this.state, isLoadingMap: false};
+            this.state = {...this.state, isLoadingMap: false, lastClicked: null};
+            this.emitChange();
+        }
+    }
+
+    initializeEditorWorld(width: number, height: number){
+        this.state = {...this.state, isLoadingMap: true}
+        this.emitChange();
+
+        try{
+            const mapString = generateMapString(width, height);
+            // const mapString = generateMapString(width, height, 'NOISE');
+            this.world = World.new(mapString)
+            // this.world = World.new("WW\nPP\nPM")
+            this.state = {...this.state, mapVersion: this.state.mapVersion + 1};
+        } catch(e){
+            console.error("Failed to initialize editor map", e);
+        } finally{
+            this.state = {...this.state, isLoadingMap: false}
             this.emitChange();
         }
     }
@@ -230,6 +260,14 @@ class SettingsStore{
         this.emitChange();
     }
 
+    signalTerrainChange(){
+        this.state = {
+            ...this.state,
+            mapVersion: this.state.mapVersion + 1,
+        }
+        this.emitChange();
+    }
+
     signalOwnershipChange(){
         this.state = {...this.state, ownershipRev: this.state.ownershipRev + 1};
         this.emitChange();
@@ -239,6 +277,41 @@ class SettingsStore{
         this.state = {
             ...this.state,
             lastClicked: {x, y},
+        }
+        this.emitChange();
+    }
+
+    setActiveTerraiType(new_value: string){
+        this.state = {
+            ...this.state,
+            activeTerrain: new_value,
+        }
+        this.emitChange();
+    }
+
+    setActiveRadius(new_value: number){
+        this.state = {
+            ...this.state,
+            activeRadius: new_value,
+        }
+        this.emitChange();
+    }
+
+    setEditorMapSize(width: number, height: number){
+        this.state = {
+            ...this.state,
+            EditorMapSize: {
+                map_width: width,
+                map_height: height,
+            }
+        }
+        this.emitChange();
+    }
+
+    setActiveMode(activeMode: 'SIMULATION' | "EDITOR"){
+        this.state = {
+            ...this.state,
+            activeMode: activeMode,
         }
         this.emitChange();
     }

@@ -1,10 +1,10 @@
-import { useSettingsController, useSettingsSelector } from "../context/Context";
-import SettingsEditor from "./SettingsEditor";
+import { useSettingsSelector } from "../context/Context";
+import SettingsEditor from "./SettingsLayers/SettingsEditor";
 import SettingsSimulation from "./SettingsLayers/SettingsSimulation";
 
 
 function SettingsPanel(){
-    const controller = useSettingsController();
+    // const controller = useSettingsController();
   
     const activeMode = useSettingsSelector(state => state.activeMode);
 

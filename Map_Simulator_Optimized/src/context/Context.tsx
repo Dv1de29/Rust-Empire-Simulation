@@ -126,6 +126,21 @@ class SettingsStore{
         }
     }
 
+    loadMapFromString(mapData: string){
+        this.state = {...this.state, isLoadingMap: true};
+        this.emitChange();
+
+        try{
+            this.world = World.new(mapData);
+            this.state = {...this.state, mapVersion: this.state.mapVersion + 1};
+        } catch(e){
+            console.warn("Error loading the mapData: ", e);
+        } finally{
+            this.state = {...this.state, isLoadingMap: false, lastClicked: null};
+            this.emitChange();
+        }
+    }
+
     initializeEditorWorld(width: number, height: number){
         this.state = {...this.state, isLoadingMap: true}
         this.emitChange();
@@ -141,6 +156,30 @@ class SettingsStore{
         } finally{
             this.state = {...this.state, isLoadingMap: false}
             this.emitChange();
+        }
+    }
+
+    async exportTerrainFile(){
+        const mapData = this.world.export_map_to_string();
+
+        try{
+            const blob = new Blob([mapData], { type: 'text/plain'});
+
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+
+            link.href = url;
+
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+            link.download = `map_export_${timestamp}.txt`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch(e){
+            console.warn("Failed to download terrain file", e);
         }
     }
     

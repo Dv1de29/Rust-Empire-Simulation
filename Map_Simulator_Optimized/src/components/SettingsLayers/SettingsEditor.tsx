@@ -1,7 +1,7 @@
-import { useSettingsController, useSettingsSelector } from "../context/Context";
-import Slider from "./Slider";
-import '../styles/SettingsPanel.css';
-import { TERRAIN_CONFIG, type TerrainKey } from "../types/types";
+import { useSettingsController, useSettingsSelector } from "../../context/Context";
+import Slider from "../Slider";
+import '../../styles/SettingsPanel.css';
+import { TERRAIN_CONFIG, type TerrainKey } from "../../types/types";
 
 
 
@@ -11,8 +11,6 @@ const MAX_MAP_SIZE = 4000000;
 function SettingsEditor() {
     const controller = useSettingsController();
 
-    // Redux selectors
-    // Cast state to TerrainKey to ensure type safety with our config object
     const selectedTerrain = useSettingsSelector(state => state.activeTerrain) as TerrainKey;
     const brushRadius = useSettingsSelector(state => state.activeRadius);
     const {map_width, map_height} = useSettingsSelector(state => state.EditorMapSize);
@@ -134,6 +132,16 @@ function SettingsEditor() {
                     transition: 'all 0.1s ease-out',
                     boxShadow: '0 0 10px rgba(0,0,0,0.5)'
                 }} />
+            </div>
+
+            <div className="actions" style={{ marginTop: '10px', marginBottom: '20px' }}>
+                <button 
+                    className="add-btn"
+                    style={{ width: '100%' }}
+                    onClick={() => controller.exportTerrainFile()}
+                >
+                    Export map fyle
+                </button>
             </div>
         </>
     );

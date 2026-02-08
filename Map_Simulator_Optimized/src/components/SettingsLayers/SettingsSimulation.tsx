@@ -1,5 +1,5 @@
 import { useSettingsController, useSettingsSelector } from "../../context/Context";
-import type { SettingsValue, SliderKey } from "../../types/types";
+import type { SliderKey } from "../../types/types";
 import { SlidersSettings } from "../../types/types";
 import Slider from "../Slider";
 import '../../styles/SettingsPanel.css';
@@ -24,6 +24,7 @@ function SettingsSimulation(){
     
     const colorRef = useRef<string>(activeEmpire?.color);
     const intervalRef = useRef<number | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
 
     ///useEffect that changes the colorRef on empire change
@@ -100,6 +101,39 @@ function SettingsSimulation(){
         }
     }
 
+    const handleMapSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+
+        if (value === "IMPORT_CUSTOM") {
+            fileInputRef.current?.click();
+        } else {
+            controller.setActiveMap(value);
+        }
+    }
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            controller.setActiveMap('world');
+            return;
+        }
+
+        try {
+            // 3. Read the file text
+            const text = await file.text();
+            
+            // 4. Pass the text content to your controller
+            // You'll need to implement this method in your store (see below)
+            controller.loadMapFromString(text);
+
+            // Clear the input so the same file can be selected again if needed
+            e.target.value = ''; 
+        } catch (err) {
+            console.error("Failed to read file:", err);
+            alert("Error reading map file");
+        }
+    };
+
 
     return (
         <>
@@ -112,18 +146,28 @@ function SettingsSimulation(){
                     name="map-select" 
                     id="map-select"
                     value={activeMap}
-                    onChange={(newValue) => {controller.setActiveMap(newValue.target.value)}}
+                    onChange={handleMapSelection}
                 >
                     <option value="world">World</option>
                     <option value="africa">Africa</option>
-                    <option value="east_asia">east_asia</option>
-                    <option value="europe">europe</option>
-                    <option value="middle_east">middle_east</option>
-                    <option value="south_america">south_america</option>
-                    <option value="west_mediteranean">west_mediteranean</option>
-                    <option value="scandinavia">scandinavia</option>
+                    <option value="east_asia">East Asia</option>
+                    <option value="europe">Europe</option>
+                    <option value="middle_east">Middle East</option>
+                    <option value="south_america">South America</option>
+                    <option value="west_mediteranean">West Mediteranean</option>
+                    <option value="scandinavia">Scandinavia</option>
+                    <option value="IMPORT_CUSTOM">Import your own</option>
                 </select>
+
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    style={{ display: 'none' }} 
+                    accept=".txt" 
+                    onChange={handleFileUpload}
+                />
             </div>
+
 
             {/* Sliders Section */}
             <div className="sliders">

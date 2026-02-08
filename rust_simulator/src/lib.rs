@@ -164,6 +164,19 @@ impl Terrain {
         }
     }
 
+    fn to_char(&self) -> char {
+        match self {
+            Terrain::Water => 'W',
+            Terrain::River => 'R',
+            Terrain::Plain => 'P',
+            Terrain::Mountain => 'M',
+            Terrain::Desert => 'D',
+            Terrain::Forest => 'F',
+            Terrain::Ice => 'I',
+            Terrain::Unknown => '?',
+        }
+    }
+
     fn get_color(&self) -> u32 {
         match self {
             Terrain::Water => 0xFFDB9538,
@@ -745,5 +758,24 @@ impl World {
                 }
             }
         }
+    }
+}
+
+// send the mapString of the tiles
+#[wasm_bindgen]
+impl World {
+    pub fn export_map_to_string(&self) -> String {
+        let capacity = self.width * self.height + self.height;
+        let mut output = String::with_capacity(capacity);
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let index = y * self.width + x;
+                output.push(self.tiles[index].to_char());
+            }
+            output.push('\n');
+        }
+
+        output
     }
 }

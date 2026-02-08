@@ -11,6 +11,7 @@ function EventsLayer({viewMode} : {viewMode: "territory" | "distance"}){
 
     const activeTerrain = useSettingsSelector(state => state.activeTerrain);
     const activeRadius = useSettingsSelector(state => state.activeRadius);
+    useSettingsSelector(state => state.mapVersion);
 
     const world = controller.world;
     

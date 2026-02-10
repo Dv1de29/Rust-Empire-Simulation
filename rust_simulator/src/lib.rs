@@ -706,60 +706,54 @@ impl World{
 // Implementing the painting options
 #[wasm_bindgen]
 impl World {
-    // ... existing methods ...
-
     pub fn paint_terrain_brush(
         &mut self, 
         center_x: i32, 
         center_y: i32, 
-        radius: i32, 
+        diameter: i32, // Changed from radius
         terrain_val: char,
     ) {
         let width = self.width as i32;
         let height = self.height as i32;
 
-        // 1. Convert the integer from JS to your Rust Enum
+        // 1. Convert char to Enum
         let terrain_type = Terrain::from_char(terrain_val.to_ascii_uppercase());
-        console_log!("Received {} transformed into {:?}", terrain_val, terrain_type);
         
-        // Get the correct color (0xAABBGGRR)
+        // Get Color
         let color = terrain_type.get_color();
 
-        // 2. Bounding Box Optimization (Clamped to map edges)
+        // 2. Calculate Radius from Diameter
+        // Integer division: 5 / 2 = 2.
+        // This ensures the brush is centered on the mouse pixel.
+        let radius = diameter / 2;
+        let radius_sq = radius * radius;
+
+        // 3. Bounding Box Optimization
         let min_x = (center_x - radius).max(0);
         let max_x = (center_x + radius).min(width - 1);
         let min_y = (center_y - radius).max(0);
         let max_y = (center_y + radius).min(height - 1);
 
-        let radius_sq = radius * radius;
-
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                // 3. Circle Check (Using i32 prevents underflow panic)
                 let dx = x - center_x;
                 let dy = y - center_y;
 
+                // 4. Circle Check
                 if dx * dx + dy * dy <= radius_sq {
                     let index = (y * width + x) as usize;
 
-                    // 4. Update Logic
-                    
-                    // A. Update the logical data
+                    // Update Logical Data
                     self.tiles[index] = terrain_type;
 
-                    // B. Update the visual buffer 
-                    // Since terrain_buffer is Vec<u32>, we assign the color directly.
-                    // This is much faster than setting 4 separate bytes.
+                    // Update Visual Buffer
                     self.terrain_buffer[index] = color;
-                    
-                    // Optional: Clear ownership/distance on painted tiles?
-                    // self.owners[index] = 0;
-                    // self.dist_vector[index] = u32::MAX;
                 }
             }
         }
     }
 }
+
 
 // send the mapString of the tiles
 #[wasm_bindgen]

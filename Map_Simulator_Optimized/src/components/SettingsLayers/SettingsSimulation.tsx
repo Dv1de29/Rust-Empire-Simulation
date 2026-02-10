@@ -17,6 +17,7 @@ function SettingsSimulation(){
     const draftEmpires = useSettingsSelector((state) => state.draftEmpires);
     const activeEmpireId = useSettingsSelector((state) => state.activeEmpireId);
     const activeMap = useSettingsSelector(state => state.activeMap);
+    const showEmpires = useSettingsSelector(state => state.showEmpires);
     
     const controller = useSettingsController();
     
@@ -90,7 +91,7 @@ function SettingsSimulation(){
 
         intervalRef.current = window.setInterval(() => {
             controller.triggerAutoGrow(grow_value);
-        }, 1000);
+        }, 100);
     }
 
     const handleStopGrow = () => {
@@ -185,6 +186,17 @@ function SettingsSimulation(){
                     )
                 })}
             </div>
+                
+            <div className="show-choice-container">
+                <span>Show empire's name?</span>
+                <input 
+                    type="checkbox" 
+                    name="show-empire" 
+                    id="show-empire"
+                    checked={showEmpires}
+                    onChange={(new_value) => controller.setShowEmpires(new_value.target.checked)}
+                />
+            </div>
 
             <div className="color-choice">
                 <ColorInput
@@ -193,6 +205,7 @@ function SettingsSimulation(){
                     onColorChange={(newColor) => {colorRef.current = newColor;}}
                 />
             </div>
+
 
             {/* Empire List Section */}
             {/* --- COLLAPSIBLE HEADER --- */}

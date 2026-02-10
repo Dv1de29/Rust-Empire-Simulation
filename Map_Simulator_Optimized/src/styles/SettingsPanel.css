@@ -17,6 +17,22 @@
     width: 100%;
 }
 
+.show-choice-container{
+    width: 100%;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.show-choice-container span{
+    font-size: 1.25em;
+}
+.show-choice-container input{
+    width: 2rem;
+}
+
 .empires-label {
     color: #ccc;
     font-size: 14px;

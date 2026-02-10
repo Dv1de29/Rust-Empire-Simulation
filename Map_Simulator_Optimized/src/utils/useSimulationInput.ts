@@ -58,11 +58,11 @@ export const useSimulationInput = (
             controller.placeEmpire(activeEmpireId, safeX, safeY);
 
         } else {
-            console.time("Dijkstra dist Calc");
+            // console.time("Dijkstra dist Calc");
             
             world.djisktra_dist_point(safeX, safeY, activeEmpireId, settings);
             
-            console.timeEnd("Dijkstra dist Calc");
+            // console.timeEnd("Dijkstra dist Calc");
         }
     };
 

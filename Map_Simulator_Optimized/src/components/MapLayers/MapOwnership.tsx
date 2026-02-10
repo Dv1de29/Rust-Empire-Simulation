@@ -14,6 +14,7 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
 
     const commitEmpires = useSettingsSelector(state => state.commitEmpires);
     const ownershipRevision = useSettingsSelector(state => state.ownershipRev);
+    const showEMpires = useSettingsSelector(state => state.showEmpires);
 
 
     useEffect(() => {
@@ -26,6 +27,8 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
         // B. Draw the Pixels to Canvas (Base Layer)
         drawOwnershipLayer(ctx, world, memory);
 
+        if ( !showEMpires) return; 
+
         // C. Draw the Overlays (Dots & Names)
         commitEmpires.forEach(emp => {
             // Only draw if it is placed AND has coordinates
@@ -36,7 +39,7 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
 
                 // Draw Dot
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2); 
+                ctx.arc(x, y, 2, 0, Math.PI * 2); 
                 ctx.fillStyle = "#FFFFFF";
                 ctx.fill();
                 ctx.lineWidth = 1;
@@ -44,7 +47,7 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
                 ctx.stroke();
 
                 // Draw Name
-                ctx.font = "bold 11px sans-serif"; 
+                ctx.font = "bold 6px sans-serif"; 
                 ctx.textAlign = "center";
                 ctx.textBaseline = "bottom";
                 
@@ -61,7 +64,7 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
             }
         });
 
-    }, [world, memory, ownershipRevision, commitEmpires])
+    }, [world, memory, ownershipRevision, commitEmpires, showEMpires])
 
     if (!world) return null; 
 

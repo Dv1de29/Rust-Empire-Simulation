@@ -29,6 +29,7 @@ interface SettingsState{
     commitEmpires: EmpireConfig[],
     activeEmpireId: number,
     activeMap: string,
+    showEmpires: boolean,
     mapVersion: number,
     ownershipRev: number,
 
@@ -67,11 +68,12 @@ class SettingsStore{
             commitEmpires: initialEmpires,
             activeEmpireId: 1,
             activeMap: "world",
+            showEmpires: true,
             mapVersion: 0,
             ownershipRev: 0,
             EditorMapSize: {map_width: 1, map_height: 1},
             activeTerrain: "W",
-            activeRadius: 0,
+            activeRadius: 1,
             isLoadingMap: false,
             isSystemReady: false,
             lastClicked: null,
@@ -160,6 +162,7 @@ class SettingsStore{
     }
 
     async exportTerrainFile(){
+        if ( !this.world ) return;
         const mapData = this.world.export_map_to_string();
 
         try{
@@ -247,6 +250,14 @@ class SettingsStore{
 
         this.loadMapInternal(map);
     }
+
+    setShowEmpires(new_value: boolean){
+        this.state = {
+            ...this.state,
+            showEmpires: new_value,
+        };
+        this.emitChange();
+    }
     
     addEmpire(defaultSettings: SettingsValue = INITIAL_SETTINGS){
         const newId = this.state.draftEmpires.length > 0 ?
@@ -274,7 +285,7 @@ class SettingsStore{
 
         this.world?.delete_empire(id)
 
-        this.state = {...this.state, draftEmpires: newDrafts, activeEmpireId: newDrafts[0].id, ownershipRev: this.state.ownershipRev + 1};
+        this.state = {...this.state, commitEmpires: newDrafts, draftEmpires: newDrafts, activeEmpireId: newDrafts[0].id, ownershipRev: this.state.ownershipRev + 1};
         this.emitChange();
     }
 

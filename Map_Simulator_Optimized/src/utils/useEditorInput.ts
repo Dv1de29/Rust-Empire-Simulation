@@ -9,10 +9,13 @@ import { drawOwnershipLayer } from '../assets/utils';
 export const useEditorInput = (
     world: World | null, 
     controller: any,
-    activeTerrain: string, // e.g., 0=Water, 1=Plain
-    brushSize: number
+    activeTerrain: string,
+    brushSize: number,
+    paintingMode: "MAP" | "RESOURCE",
 ) => {
     const [isPainting, setIsPainting] = useState(false);
+
+    // console.log(activeTerrain);
 
     // Helper to calculate Grid Coords
     const getCoords = (e: React.MouseEvent, rect: DOMRect) => {
@@ -31,19 +34,31 @@ export const useEditorInput = (
         if (!coords) return;
 
         // Call Rust
-        world.paint_terrain_brush(coords.x, coords.y, brushSize, activeTerrain);
+        if ( paintingMode === "MAP"){
+            world.paint_terrain_brush(coords.x, coords.y, brushSize, activeTerrain);
+        } else {
+            world.paint_resource_brush(coords.x, coords.y, brushSize, activeTerrain);
+        }
     };
 
     return {
         onMouseDown: (e: React.MouseEvent, rect: DOMRect) => {
             setIsPainting(true);
             paint(e, rect); // Paint the first dot immediately
-            controller.signalTerrainChange();
+            if ( paintingMode === "MAP"){
+                controller.signalTerrainChange();
+            } else {
+                controller.signalResourceChange();
+            }
         },
         onMouseMove: (e: React.MouseEvent, rect: DOMRect) => {
             if (isPainting) {
                 paint(e, rect); // Continue painting while dragging
-                controller.signalTerrainChange();
+                if ( paintingMode === "MAP"){
+                    controller.signalTerrainChange();
+                } else {
+                    controller.signalResourceChange();
+                }
             }
         },
         onMouseUp: () => setIsPainting(false),

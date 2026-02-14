@@ -4,10 +4,12 @@ import MapOwnership from "./MapLayers/MapOwnership";
 import MapDistance from './MapLayers/MapDistance';
 import '../styles/MapPanel.css'; 
 
-import { useSettingsSelector } from '../context/Context';
+import { useSettingsController, useSettingsSelector } from '../context/Context';
 import EventsLayer from './MapLayers/EventsLayer';
+import MapValue from './MapLayers/MapValue';
 
 type MapViewMode = 'territory' | 'distance';
+type PaintingMode = "MAP" | "RESOURCE";
 
 function MapPanel(){
     const isSystemReady = useSettingsSelector(state => state.isSystemReady);
@@ -16,6 +18,10 @@ function MapPanel(){
     const appMode = useSettingsSelector(state => state.activeMode);
 
     const [viewMode, setViewMode] = useState<MapViewMode>('territory');
+    const [paintingMode, setPaintingMode] = useState<PaintingMode>("MAP");
+
+    const controller = useSettingsController();
+
 
     if (!isSystemReady || isLoadingMap) return <div>Loading....</div>;
 
@@ -25,7 +31,46 @@ function MapPanel(){
                 <h3>Map View</h3>
                 
                 {/* --- TABS --- */}
-                <div className="map-tabs">
+
+                {appMode === 'SIMULATION' ? (
+                    <div className="map-tabs simulation-mode-tabs">
+                        <button 
+                            className={`tab-btn ${viewMode === 'territory' ? 'active' : ''}`}
+                            onClick={() => setViewMode('territory')}
+                        >
+                            Territory
+                        </button>
+                        <button 
+                            className={`tab-btn ${viewMode === 'distance' ? 'active' : ''}`}
+                            onClick={() => setViewMode('distance')}
+                        >
+                            Distance
+                        </button>
+                    </div>
+                ) : (
+                    <div className="map-tabs editor-mode-tabs">
+                        <button 
+                            className={`tab-btn ${paintingMode === 'MAP' ? 'active' : ''}`}
+                            onClick={() => {
+                                setPaintingMode('MAP');
+                                controller.setActivePainting("MAP")
+                            }}
+                        >
+                            Terrain
+                        </button>
+                        <button 
+                            className={`tab-btn ${paintingMode === 'RESOURCE' ? 'active' : ''}`}
+                            onClick={() => {
+                                setPaintingMode('RESOURCE');
+                                controller.setActivePainting("RESOURCE");
+                            }}
+                        >
+                            Resource
+                        </button>
+                    </div>
+                )}
+
+                {/* <div className="map-tabs simulation-mode-tabs">
                     <button 
                         className={`tab-btn ${viewMode === 'territory' ? 'active' : ''}`}
                         onClick={() => setViewMode('territory')}
@@ -38,7 +83,7 @@ function MapPanel(){
                     >
                         Distance
                     </button>
-                </div>
+                </div> */}
             </div>
 
             <div className="map">
@@ -48,17 +93,29 @@ function MapPanel(){
                 </div>
 
                 {/* Ownership/distance layer */}
-                {viewMode === 'territory' ? (
-                    <div className="map-layer ownership-layer">
-                        <MapOwnership mode={appMode}/>
-                    </div>
-                ) : (
-                    <div className="map-layer distance-layer">
-                        <MapDistance/>
-                    </div>
-                )}
+                {appMode === "SIMULATION" ?  
+                    (viewMode === 'territory' ? (
+                        <div className="map-layer ownership-layer">
+                            <MapOwnership mode={appMode}/>
+                        </div>
+                    ) : (
+                        <div className="map-layer distance-layer">
+                            <MapDistance/>
+                        </div>
+                    )
+                    ) : (
+                        paintingMode === "MAP" ? (
+                            <></>
+                        ) : (
+                            <div className="map-layer resource-layer">
+                                <MapValue />
+                            </div>
+                            
+                        )
+                    )
+                }
 
-                <EventsLayer viewMode={viewMode}/>
+                <EventsLayer viewMode={viewMode} paintingMode={paintingMode}/>
             </div>
         </div>
     );

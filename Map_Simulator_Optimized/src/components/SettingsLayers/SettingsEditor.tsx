@@ -1,7 +1,8 @@
 import { useSettingsController, useSettingsSelector } from "../../context/Context";
 import Slider from "../Slider";
 import '../../styles/SettingsPanel.css';
-import { TERRAIN_CONFIG, type TerrainKey } from "../../types/types";
+import { TERRAIN_CONFIG, RESOURCE_CONFIG, type TerrainKey, get_activeInfo_terrain, get_activeInfo_resource } from "../../types/types";
+import SelectType from "../SelectType";
 
 
 
@@ -12,11 +13,14 @@ function SettingsEditor() {
     const controller = useSettingsController();
 
     const selectedTerrain = useSettingsSelector(state => state.activeTerrain) as TerrainKey;
+    const selectedResource = useSettingsSelector(state => state.activeResource);
     const brushRadius = useSettingsSelector(state => state.activeRadius);
     const {map_width, map_height} = useSettingsSelector(state => state.EditorMapSize);
 
+    const paintingMode = useSettingsSelector(state => state.activePainting);
+
     // Get current color info, fallback to water if something is wrong
-    const activeInfo = TERRAIN_CONFIG[selectedTerrain] || TERRAIN_CONFIG.water;
+    const activeInfo = paintingMode === "MAP" ? get_activeInfo_terrain(selectedTerrain) : get_activeInfo_resource(selectedResource);
 
     return (
         <>
@@ -75,26 +79,22 @@ function SettingsEditor() {
                     }} />
                 </div>
                 
-                <select 
-                    name="terrain-select" 
-                    id="terrain-select"
-                    value={selectedTerrain}
-                    onChange={(e) => controller.setActiveTerraiType(e.target.value)}
-                    style={{ 
-                        width: '100%', 
-                        padding: '8px', 
-                        background: '#333', 
-                        color: 'white', 
-                        border: '1px solid #555', 
-                        borderRadius: '4px' 
-                    }}
-                >
-                    {Object.entries(TERRAIN_CONFIG).map(([key, config]) => (
-                        <option key={key} value={key}>
-                            {config.name}
-                        </option>
-                    ))}
-                </select>
+                {paintingMode === "MAP" ? (
+                    <SelectType 
+                        id="terrain-select"
+                        selectedType={selectedTerrain}
+                        setFunction={(new_value: string) => {controller.setActiveTerraiType(new_value)}}
+                        Configuration={TERRAIN_CONFIG}
+                    />
+                ) : (
+                    <SelectType 
+                        id="value-select"
+                        selectedType={selectedResource}
+                        setFunction={(new_value: string) => {controller.setActiveResourceType(new_value)}}
+                        Configuration={RESOURCE_CONFIG}
+                    />
+                )}
+
             </div>
 
             <hr style={{ borderColor: '#444', margin: '15px 0' }} />
@@ -140,7 +140,7 @@ function SettingsEditor() {
                     style={{ width: '100%' }}
                     onClick={() => controller.exportTerrainFile()}
                 >
-                    Export map fyle
+                    Export map file
                 </button>
             </div>
         </>

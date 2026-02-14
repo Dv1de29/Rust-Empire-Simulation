@@ -3,11 +3,16 @@ import { useSettingsController, useSettingsSelector } from "../../context/Contex
 import { useSimulationInput } from "../../utils/useSimulationInput";
 import { useEditorInput } from "../../utils/useEditorInput";
 
-function EventsLayer({viewMode} : {viewMode: "territory" | "distance"}){
+function EventsLayer({viewMode, paintingMode} : {
+        viewMode: "territory" | "distance",
+        paintingMode: "MAP" | "RESOURCE"
+    }){
     const controller = useSettingsController();
     const appMode = useSettingsSelector(state => state.activeMode);
 
     const activeTerrain = useSettingsSelector(state => state.activeTerrain);
+    const activeResource = useSettingsSelector(state => state.activeResource);
+
     const activeDiameter = useSettingsSelector(state => state.activeRadius); // Assuming this is diameter
     useSettingsSelector(state => state.mapVersion);
 
@@ -18,7 +23,13 @@ function EventsLayer({viewMode} : {viewMode: "territory" | "distance"}){
     const brushRef = useRef<HTMLDivElement>(null);
 
     const simInput = useSimulationInput(world, controller, viewMode);
-    const editorInput = useEditorInput(world, controller, activeTerrain, activeDiameter);
+    const editorInput = useEditorInput(
+        world, 
+        controller, 
+        paintingMode === "MAP" ? activeTerrain : activeResource, 
+        activeDiameter, 
+        paintingMode
+     );
 
     const handleEvent = (eventName: string, e: React.MouseEvent) => {
         const container = containerRef.current;

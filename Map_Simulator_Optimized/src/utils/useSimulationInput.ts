@@ -41,7 +41,7 @@ export const useSimulationInput = (
         const safeX = Math.max(0, Math.min(cellX, world.width() - 1));
         const safeY = Math.max(0, Math.min(cellY, world.height() - 1));
 
-        console.log(`Clicked Cell: [${safeX}, ${safeY}]`);
+        // console.log(`Clicked Cell: [${safeX}, ${safeY}]`);
 
         controller.setLastClicked(safeX, safeY);
        
@@ -51,9 +51,12 @@ export const useSimulationInput = (
             const empire_color = hexToColorInt(activeEmpire.color);
             const size = activeEmpire.settings.size || 500;
             
-            world.add_empire(
+            if (!world.add_empire(
                 safeX, safeY, activeEmpireId, empire_color, size, settings
-            );
+            )) {
+                alert("Cannot place an empire");
+                return;
+            }
             
             controller.placeEmpire(activeEmpireId, safeX, safeY);
 

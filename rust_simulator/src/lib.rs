@@ -205,6 +205,113 @@ impl Terrain {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Resource {
+    None = 0,
+    Gold = 1,
+    Silver = 2,
+    Gems = 3,
+    Coal = 4,
+    Cows = 5,
+    Wheat = 6,
+    Fish = 7,
+    Silk = 8,
+    Spices = 9,
+    Wine = 10,
+}
+
+impl Resource {
+    pub fn from_u8(val: u8) -> Resource {
+        match val {
+            1 => Resource::Gold,
+            2 => Resource::Silver,
+            3 => Resource::Gems,
+            4 => Resource::Coal,
+            5 => Resource::Cows,
+            6 => Resource::Wheat,
+            7 => Resource::Fish,
+            8 => Resource::Silk,
+            9 => Resource::Spices,
+            10 => Resource::Wine,
+            _ => Resource::None,
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        *self as u8
+    }
+
+    // Characters for map string export/import
+    // g=Gold, s=Silver, *=Gems, c=Coal, C=Cows, w=Wheat, f=Fish, S=Silk, !=Spices, v=Wine
+    pub fn from_char(c: char) -> Resource {
+        match c {
+            'g' => Resource::Gold,
+            's' => Resource::Silver,
+            '*' => Resource::Gems,
+            'c' => Resource::Coal,
+            'C' => Resource::Cows,
+            'w' => Resource::Wheat,
+            'f' => Resource::Fish,
+            'S' => Resource::Silk,
+            '!' => Resource::Spices,
+            'v' => Resource::Wine,
+            _ => Resource::None,
+        }
+    }
+
+    pub fn to_char(&self) -> char {
+        match self {
+            Resource::Gold => 'g',
+            Resource::Silver => 's',
+            Resource::Gems => '*',
+            Resource::Coal => 'c',
+            Resource::Cows => 'C',
+            Resource::Wheat => 'w',
+            Resource::Fish => 'f',
+            Resource::Silk => 'S',
+            Resource::Spices => '!',
+            Resource::Wine => 'v',
+            Resource::None => '.',
+        }
+    }
+
+    // Returns the Strategic Value (0-255) we discussed for Dijkstra calculation
+    pub fn get_value(&self) -> u32 {
+        match self {
+            Resource::Gold => 100,
+            Resource::Silver => 70,
+            Resource::Gems => 150,
+            Resource::Coal => 70,
+            Resource::Cows => 30,
+            Resource::Wheat => 20,
+            Resource::Fish => 25,
+            Resource::Silk => 80,
+            Resource::Spices => 90,
+            Resource::Wine => 40,
+            Resource::None => 0,
+        }
+    }
+
+    // Returns Color in Little Endian (0xAABBGGRR) format for the pixel buffer
+    pub fn get_color(&self) -> u32 {
+        match self {
+            // A=FF (255) for all opaque colors
+            Resource::Gold   => 0xFF00D7FF, // #FFD700
+            Resource::Silver => 0xFFC0C0C0, // #C0C0C0
+            Resource::Gems   => 0xFFD670DA, // #DA70D6 (Orchid)
+            Resource::Coal   => 0xFF4F4F2F, // #2F4F4F (Dark Slate Grey)
+            Resource::Cows   => 0xFF2D52A0, // #A0522D (Sienna)
+            Resource::Wheat  => 0xFFB3DEF5, // #F5DEB3 (Wheat)
+            Resource::Fish   => 0xFFEEEEAF, // #AFEEEE (Pale Turquoise)
+            Resource::Silk   => 0xFFB469FF, // #FF69B4 (Hot Pink)
+            Resource::Spices => 0xFF1E69D2, // #D2691E (Chocolate)
+            Resource::Wine   => 0xFF000080, // #800000 (Maroon)
+            Resource::None   => 0x00000000, // Transparent or handle separately
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct Empire{
@@ -224,24 +331,61 @@ impl Empire{
 }
 
 
+
+fn string_to_vec<T, F>(map_data: &str, parser: F, fixed_size: usize, default: T) -> Vec<T>
+where
+    F: Fn(char) -> T, 
+    T: Clone,
+{
+    let lines: Vec<&str> = map_data.lines().filter(|l| !l.is_empty()).collect();
+    let height = lines.len();
+    let width = if height > 0 { lines[0].trim().len() } else { 0 };
+    let size = width * height;
+
+    if size != fixed_size {
+        return vec![default; size]
+    }
+
+    let mut result_vector = Vec::with_capacity(size);
+
+    for line in lines {
+        for c in line.trim().chars() {
+            result_vector.push(parser(c));
+        }
+    }
+
+    result_vector
+}
+
+
+
+
 #[wasm_bindgen]
 pub struct World {
     width: usize,
     height: usize,
     tiles: Vec<Terrain>,
     owners: Vec<u32>,
+    resources: Vec<Resource>,
     terrain_buffer: Vec<u32>,
     ownership_buffer: Vec<u32>,
     dist_buffer: Vec<u32>,
+    resource_buffer: Vec<u32>,
     
     dist_vector: Vec<u32>,
     dist_map: Vec<u32>,
     empires: HashMap<u32, Empire>,
 }
 
+
+
+
+///////
+/// need to add valueMap
+
 #[wasm_bindgen]
 impl World {
-    pub fn new(map_str: &str) -> World {
+    pub fn new(map_str: &str, value_str: Option<String>) -> World {
         // (Parsing logic remains the same - usually fast enough sequentially)
         let lines: Vec<&str> = map_str.lines().filter(|l| !l.is_empty()).collect();
         let height = lines.len();
@@ -259,14 +403,23 @@ impl World {
             }
         }
 
+        // let tiles = string_to_vec(map_str, Terrain::from_char);
+
+        let resources = match value_str {
+            Some(resourceData) => string_to_vec(&resourceData, Resource::from_char, size, Resource::None),
+            None => vec![Resource::None; size],
+        };
+
         let mut world = World {
             width,
             height,
             tiles,
             owners: vec![0; size],
+            resources,
             terrain_buffer: vec![0xFF000000; size],
             ownership_buffer: vec![0x00000000; size],
             dist_buffer: vec![0x0000000; size],
+            resource_buffer: vec![0x00000000; size],
 
             dist_vector,
             dist_map,
@@ -295,6 +448,10 @@ impl World {
 
     pub fn get_dist_buffer_ptr(&self) -> *const u32 {
         self.dist_buffer.as_ptr()
+    }
+
+    pub fn get_resource_buffer_ptr(&self) -> *const u32{
+        self.resource_buffer.as_ptr()
     }
 
     // --- PARALLEL RENDERER ---
@@ -360,6 +517,15 @@ impl World {
             });
     }
 
+    pub fn render_resources(&mut self){
+        self.resource_buffer
+            .par_iter_mut()
+            .zip(self.resources.par_iter())
+            .for_each(|(pixel, resource)| {
+                *pixel = resource.get_color();
+            });
+    }
+
 
 
 
@@ -367,7 +533,7 @@ impl World {
 
 
     /// adding an empire capital
-    pub fn add_empire(&mut self, x: usize, y: usize, empire_id: u32, color: u32, size: u32, settings: Vec<u32>) {
+    pub fn add_empire(&mut self, x: usize, y: usize, empire_id: u32, color: u32, size: u32, settings: Vec<u32>) -> bool {
         if settings.len() != 8{
             panic!("Settings empire must have lenght 8");
         }
@@ -378,6 +544,10 @@ impl World {
         if index < self.owners.len() {
             self.owners[index] = empire_id;
             self.dist_vector[index] = 0;
+        }
+
+        if !self.tiles[index].is_liveable() {
+            return false;
         }
 
         // first will be always for unknown.
@@ -391,6 +561,8 @@ impl World {
         self.empires.insert(empire_id, empire);
 
         self.calc_teritory(index, empire_id, size);
+
+        return true;
     }
 
     /// updating empire color
@@ -710,7 +882,7 @@ impl World {
         &mut self, 
         center_x: i32, 
         center_y: i32, 
-        diameter: i32, // Changed from radius
+        diameter: i32, 
         terrain_val: char,
     ) {
         let width = self.width as i32;
@@ -748,6 +920,45 @@ impl World {
 
                     // Update Visual Buffer
                     self.terrain_buffer[index] = color;
+                }
+            }
+        }
+    }
+
+    pub fn paint_resource_brush(
+        &mut self, 
+        center_x: i32, 
+        center_y: i32, 
+        diameter: i32, 
+        resource_val: char,
+    ) {
+        console_log!("ENTERED BRUSH RESOURCES with resource_val: {}", resource_val);
+
+        let width = self.width as i32;
+        let height = self.height as i32;
+
+        let resource_type = Resource::from_char(resource_val);
+        
+        let color = resource_type.get_color();
+
+        let radius = diameter / 2;
+        let radius_sq = radius * radius;
+
+        let min_x = (center_x - radius).max(0);
+        let max_x = (center_x + radius).min(width - 1);
+        let min_y = (center_y - radius).max(0);
+        let max_y = (center_y + radius).min(height - 1);
+
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let dx = x - center_x;
+                let dy = y - center_y;
+
+                if dx * dx + dy * dy <= radius_sq {
+                    let index = (y * width + x) as usize;
+
+                    self.resources[index] = resource_type;
+                    self.resource_buffer[index] = color;
                 }
             }
         }

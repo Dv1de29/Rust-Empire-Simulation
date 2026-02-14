@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 
 
-import type { EmpireConfig, SettingsValue } from "../types/types";
+import { DEFAULT_RESOURCE, type EmpireConfig, type SettingsValue } from "../types/types";
 
 import { STARTING_EMPIRES, INITIAL_SETTINGS } from "../assets/initials";
 
@@ -28,17 +28,23 @@ interface SettingsState{
     draftEmpires: EmpireConfig[],
     commitEmpires: EmpireConfig[],
     activeEmpireId: number,
+
     activeMap: string,
+
     showEmpires: boolean,
+
     mapVersion: number,
     ownershipRev: number,
+    resourceVersion: number,
 
     EditorMapSize: {
         map_width: number,
         map_height: number,
     }
-    activeTerrain: string,
     activeRadius: number,
+
+    activeTerrain: string,
+    activeResource: string,
 
     isLoadingMap: boolean,
     isSystemReady: boolean;
@@ -49,6 +55,7 @@ interface SettingsState{
     } | null,
 
     activeMode: "SIMULATION" | "EDITOR",
+    activePainting: "MAP" | "RESOURCE",
 }
 
 
@@ -71,13 +78,18 @@ class SettingsStore{
             showEmpires: true,
             mapVersion: 0,
             ownershipRev: 0,
+            resourceVersion: 0,
             EditorMapSize: {map_width: 1, map_height: 1},
-            activeTerrain: "W",
             activeRadius: 1,
+
+            activeTerrain: "W",
+            activeResource: DEFAULT_RESOURCE,
+
             isLoadingMap: false,
             isSystemReady: false,
             lastClicked: null,
             activeMode: "SIMULATION",
+            activePainting: "MAP",
         };
         this.listeners = new Set();
     }
@@ -323,6 +335,11 @@ class SettingsStore{
         this.emitChange();
     }
 
+    signalResourceChange(){
+        this.state = {...this.state, resourceVersion: this.state.resourceVersion + 1};
+        this.emitChange();
+    }
+
     setLastClicked(x: number, y: number){
         this.state = {
             ...this.state,
@@ -335,6 +352,14 @@ class SettingsStore{
         this.state = {
             ...this.state,
             activeTerrain: new_value,
+        }
+        this.emitChange();
+    }
+
+    setActiveResourceType(new_value: string){
+        this.state = {
+            ...this.state,
+            activeResource: new_value,
         }
         this.emitChange();
     }
@@ -362,6 +387,14 @@ class SettingsStore{
         this.state = {
             ...this.state,
             activeMode: activeMode,
+        }
+        this.emitChange();
+    }
+
+    setActivePainting(activePainting: "MAP" | "RESOURCE"){
+        this.state = {
+            ...this.state,
+            activePainting: activePainting,
         }
         this.emitChange();
     }

@@ -24,14 +24,11 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
         if (!world || !memory || !ctx || !canvas) return;
 
 
-        // B. Draw the Pixels to Canvas (Base Layer)
         drawOwnershipLayer(ctx, world, memory);
 
         if ( !showEMpires) return; 
 
-        // C. Draw the Overlays (Dots & Names)
         commitEmpires.forEach(emp => {
-            // Only draw if it is placed AND has coordinates
             if (emp.alreadyPlaced && emp.capital) {
                 const { x, y } = emp.capital;
 
@@ -78,7 +75,7 @@ function MapOwnership({mode} : {mode: "SIMULATION" | "EDITOR"}) {
                 width: '100%',
                 height: '100%',
                 display: 'block',
-                imageRendering: 'pixelated' // Keep edges sharp!
+                imageRendering: 'pixelated'
             }}
         />
     );

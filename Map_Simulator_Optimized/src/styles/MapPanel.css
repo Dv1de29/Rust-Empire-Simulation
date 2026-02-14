@@ -99,3 +99,8 @@
     z-index: 2;
     opacity: 0.75;
 }
+
+.resource-layer {
+    z-index: 3;
+    opacity: 0.75;
+}

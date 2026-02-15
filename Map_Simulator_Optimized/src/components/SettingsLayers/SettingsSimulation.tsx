@@ -18,6 +18,7 @@ function SettingsSimulation(){
     const activeEmpireId = useSettingsSelector((state) => state.activeEmpireId);
     const activeMap = useSettingsSelector(state => state.activeMap);
     const showEmpires = useSettingsSelector(state => state.showEmpires);
+    const showResourcesMap = useSettingsSelector(state => state.showResourcesMap);
     
     const controller = useSettingsController();
     
@@ -25,7 +26,8 @@ function SettingsSimulation(){
     
     const colorRef = useRef<string>(activeEmpire?.color);
     const intervalRef = useRef<number | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileMapInputRef = useRef<HTMLInputElement>(null);
+    const fileResourceInputRef = useRef<HTMLInputElement>(null);
     
 
     ///useEffect that changes the colorRef on empire change
@@ -106,9 +108,24 @@ function SettingsSimulation(){
         const value = e.target.value;
 
         if (value === "IMPORT_CUSTOM") {
-            fileInputRef.current?.click();
+            fileMapInputRef.current?.click();
         } else {
             controller.setActiveMap(value);
+        }
+    }
+
+    const handleResourceSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+
+        if ( value === "no"){
+            controller.setUseResources(false);
+            return;
+        }
+
+        controller.setUseResources(true);
+
+        if (value === "IMPORT_CUSTOM") {
+            fileResourceInputRef.current?.click();
         }
     }
 
@@ -124,7 +141,6 @@ function SettingsSimulation(){
             const text = await file.text();
             
             // 4. Pass the text content to your controller
-            // You'll need to implement this method in your store (see below)
             controller.loadMapFromString(text);
 
             // Clear the input so the same file can be selected again if needed
@@ -135,6 +151,26 @@ function SettingsSimulation(){
         }
     };
 
+    const handleFileResoruceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            
+            controller.loadResoruceFromString(text);
+
+            e.target.value = ''; 
+        } catch (err) {
+            console.error("Failed to read file:", err);
+            alert("Error reading resoruce file");
+        }
+    };
+
+    
+
 
     return (
         <>
@@ -143,31 +179,57 @@ function SettingsSimulation(){
             </div>
 
             <div className="map-selection">
-                <select 
-                    name="map-select" 
-                    id="map-select"
-                    value={activeMap}
-                    onChange={handleMapSelection}
-                >
-                    <option value="world">World</option>
-                    <option value="africa">Africa</option>
-                    <option value="east_asia">East Asia</option>
-                    <option value="europe">Europe</option>
-                    <option value="middle_east">Middle East</option>
-                    <option value="south_america">South America</option>
-                    <option value="west_mediteranean">West Mediteranean</option>
-                    <option value="scandinavia">Scandinavia</option>
-                    <option value="IMPORT_CUSTOM">Import your own</option>
-                </select>
+                <div className="select-option">
+                    <label htmlFor="map-select">Import map:</label>
+                    <select 
+                        name="map-select" 
+                        id="map-select"
+                        value={activeMap}
+                        onChange={handleMapSelection}
+                    >
+                        <option value="world">World</option>
+                        <option value="africa">Africa</option>
+                        <option value="east_asia">East Asia</option>
+                        <option value="europe">Europe</option>
+                        <option value="middle_east">Middle East</option>
+                        <option value="south_america">South America</option>
+                        <option value="west_mediteranean">West Mediteranean</option>
+                        <option value="scandinavia">Scandinavia</option>
+                        <option value="IMPORT_CUSTOM">Import your own</option>
+                    </select>
+                </div>
+
+                <div className="select-option">    
+                    <label htmlFor="map-select">Use resource:</label>
+                    <select 
+                        name="resource-select" 
+                        id="map-select"
+                        value={activeMap}
+                        onChange={handleResourceSelection}
+                    >
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                        <option value="IMPORT_CUSTOM">Import your own</option>
+                    </select>
+                </div>
 
                 <input 
                     type="file" 
-                    ref={fileInputRef} 
+                    ref={fileMapInputRef} 
                     style={{ display: 'none' }} 
                     accept=".txt" 
                     onChange={handleFileUpload}
                 />
+
+                <input 
+                    type="file" 
+                    ref={fileResourceInputRef} 
+                    style={{ display: 'none' }} 
+                    accept=".txt" 
+                    onChange={handleFileResoruceUpload}
+                />
             </div>
+
 
 
             {/* Sliders Section */}
@@ -188,14 +250,26 @@ function SettingsSimulation(){
             </div>
                 
             <div className="show-choice-container">
-                <span>Show empire's name?</span>
-                <input 
-                    type="checkbox" 
-                    name="show-empire" 
-                    id="show-empire"
-                    checked={showEmpires}
-                    onChange={(new_value) => controller.setShowEmpires(new_value.target.checked)}
-                />
+                <div className="check-container">
+                    <span>Show empire's name?</span>
+                    <input 
+                        type="checkbox" 
+                        name="show-empire" 
+                        id="show-empire"
+                        checked={showEmpires}
+                        onChange={(new_value) => controller.setShowEmpires(new_value.target.checked)}
+                    />
+                </div>
+                <div className="check-container">
+                    <span>Show resources?</span>
+                    <input 
+                        type="checkbox" 
+                        name="show-resources" 
+                        id="show-resources"
+                        checked={showResourcesMap}
+                        onChange={(new_value) => controller.setShowResourcesMap(new_value.target.checked)}
+                    />
+                </div>  
             </div>
 
             <div className="color-choice">

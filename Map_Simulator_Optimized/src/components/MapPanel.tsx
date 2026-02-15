@@ -14,6 +14,7 @@ type PaintingMode = "MAP" | "RESOURCE";
 function MapPanel(){
     const isSystemReady = useSettingsSelector(state => state.isSystemReady);
     const isLoadingMap = useSettingsSelector(state => state.isLoadingMap);
+    const showResourcesMap = useSettingsSelector(state => state.showResourcesMap);
     
     const appMode = useSettingsSelector(state => state.activeMode);
 
@@ -95,9 +96,16 @@ function MapPanel(){
                 {/* Ownership/distance layer */}
                 {appMode === "SIMULATION" ?  
                     (viewMode === 'territory' ? (
+                        <>
                         <div className="map-layer ownership-layer">
                             <MapOwnership mode={appMode}/>
                         </div>
+                        {showResourcesMap && (
+                            <div className="map-layer resource-layer">
+                                <MapValue/>
+                            </div> 
+                        )}
+                        </>
                     ) : (
                         <div className="map-layer distance-layer">
                             <MapDistance/>

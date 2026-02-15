@@ -32,10 +32,13 @@ interface SettingsState{
     activeMap: string,
 
     showEmpires: boolean,
+    showResourcesMap: boolean,
 
     mapVersion: number,
     ownershipRev: number,
     resourceVersion: number,
+
+    useResources: boolean,
 
     EditorMapSize: {
         map_width: number,
@@ -76,9 +79,11 @@ class SettingsStore{
             activeEmpireId: 1,
             activeMap: "world",
             showEmpires: true,
+            showResourcesMap: false,
             mapVersion: 0,
             ownershipRev: 0,
             resourceVersion: 0,
+            useResources: true,
             EditorMapSize: {map_width: 1, map_height: 1},
             activeRadius: 1,
 
@@ -155,6 +160,21 @@ class SettingsStore{
         }
     }
 
+    loadResoruceFromString(resourceData: string){
+        this.state = {...this.state, isLoadingMap: true};
+        this.emitChange();
+
+        try{
+            this.world?.import_resource_data(resourceData);
+            this.state = {...this.state, resourceVersion: this.state.resourceVersion + 1};
+        } catch(e){
+            console.warn("Error impproting the resourceData: ", e);
+        } finally{
+            this.state = {...this.state, isLoadingMap: false, lastClicked: null};
+            this.emitChange();
+        }
+    }
+
     initializeEditorWorld(width: number, height: number){
         this.state = {...this.state, isLoadingMap: true}
         this.emitChange();
@@ -195,6 +215,31 @@ class SettingsStore{
             URL.revokeObjectURL(url);
         } catch(e){
             console.warn("Failed to download terrain file", e);
+        }
+    }
+
+    async exportResourceFile(){
+        if ( !this.world ) return;
+        const mapData = this.world.export_resource_to_string();
+
+        try{
+            const blob = new Blob([mapData], { type: 'text/plain'});
+
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+
+            link.href = url;
+
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+            link.download = `resource_export_${timestamp}.txt`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch(e){
+            console.warn("Failed to download resource file", e);
         }
     }
     
@@ -270,6 +315,14 @@ class SettingsStore{
         };
         this.emitChange();
     }
+
+    setShowResourcesMap(new_value: boolean){
+        this.state = {
+            ...this.state,
+            showResourcesMap: new_value,
+        };
+        this.emitChange();
+    }
     
     addEmpire(defaultSettings: SettingsValue = INITIAL_SETTINGS){
         const newId = this.state.draftEmpires.length > 0 ?
@@ -316,7 +369,7 @@ class SettingsStore{
     triggerAutoGrow(size: number){
         if ( !this.world) return;
 
-        this.world.auto_grow(size);
+        this.world.auto_grow(size, this.state.useResources);
 
         this.state = {...this.state, ownershipRev: this.state.ownershipRev + 1};
         this.emitChange();
@@ -360,6 +413,14 @@ class SettingsStore{
         this.state = {
             ...this.state,
             activeResource: new_value,
+        }
+        this.emitChange();
+    }
+
+    setUseResources(new_value: boolean){
+        this.state = {
+            ...this.state,
+            useResources: new_value,
         }
         this.emitChange();
     }

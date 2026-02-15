@@ -138,9 +138,15 @@ function SettingsEditor() {
                 <button 
                     className="add-btn"
                     style={{ width: '100%' }}
-                    onClick={() => controller.exportTerrainFile()}
+                    onClick={() => {
+                        if ( paintingMode === "MAP"){
+                            controller.exportTerrainFile();
+                        } else {
+                            controller.exportResourceFile();
+                        }
+                    }}
                 >
-                    Export map file
+                    {`Export ${paintingMode === "MAP" ? "map" : "resource"} file`}
                 </button>
             </div>
         </>

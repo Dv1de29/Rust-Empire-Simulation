@@ -20,6 +20,7 @@
 .show-choice-container{
     width: 100%;
     display: flex;
+    flex-flow: column;
     justify-content: start;
     align-items: center;
     gap: 10px;
@@ -141,9 +142,19 @@
 
 
 /* --- MAP SELECTION (DROPDOWN) --- */
+
+
+
 .map-selection {
     width: 100%;
     padding: 0 1rem 1.5rem 1rem; /* Space below header, above sliders */
+    display: flex;
+    flex-flow: column;
+}
+
+.map-selection label{
+    color: white;
+    margin-bottom: 10px;
 }
 
 .map-selection select {

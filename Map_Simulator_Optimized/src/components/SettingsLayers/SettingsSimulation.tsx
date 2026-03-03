@@ -11,7 +11,6 @@ function SettingsSimulation(){
     const [isListCollapsed, setIsListCollapsed] = useState<boolean>(false);
 
     const [growAmount, setGrowAmount] = useState<number>(100);
-    // 2. New State to track if loop is active (Ref doesn't trigger re-render)
     const [isGrowing, setIsGrowing] = useState<boolean>(false);
     
     const draftEmpires = useSettingsSelector((state) => state.draftEmpires);
@@ -19,6 +18,7 @@ function SettingsSimulation(){
     const activeMap = useSettingsSelector(state => state.activeMap);
     const showEmpires = useSettingsSelector(state => state.showEmpires);
     const showResourcesMap = useSettingsSelector(state => state.showResourcesMap);
+    const useResources = useSettingsSelector(state => state.useResources);
     
     const controller = useSettingsController();
     
@@ -47,10 +47,6 @@ function SettingsSimulation(){
     }, []);
 
 
-
-    // Guard clause: if no empire is selected, we still might want to show the list, 
-    // but for now we keep your logic or just render the list if activeEmpire is null.
-    // Assuming we want to always show the panel structure:
     if ( !activeEmpire ) return <div className="settings-panel">No active Empire</div>
 
 
@@ -116,6 +112,7 @@ function SettingsSimulation(){
 
     const handleResourceSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
+
 
         if ( value === "no"){
             controller.setUseResources(false);
@@ -204,7 +201,7 @@ function SettingsSimulation(){
                     <select 
                         name="resource-select" 
                         id="map-select"
-                        value={activeMap}
+                        value={useResources ? "yes" : "no"}
                         onChange={handleResourceSelection}
                     >
                         <option value="yes">Yes</option>

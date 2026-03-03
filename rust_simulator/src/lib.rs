@@ -15,7 +15,7 @@ extern "C" {
     fn log(s: &str);
 }
 
-// 2. Create a macro that mimics println!
+// a macro that mimics println!
 macro_rules! console_log {
     // This pattern matches arguments exactly like println! does
     ($($t:tt)*) => (log(&format!($($t)*)))
@@ -77,7 +77,7 @@ macro_rules! console_log {
 
 
 
-#[derive(Copy, Clone, Eq, PartialEq)] // Eq and PartialEq are required for Ord
+#[derive(Copy, Clone, Eq, PartialEq)]
 struct State {
     cost: u32,
     index: usize,
@@ -99,16 +99,16 @@ impl PartialOrd for State {
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct AutoGrowState {
     sort_cost: u32, // Primary Sort: Modified by resources
-    true_cost: u32, // Secondary Sort: Actual distance (tie-breaker)
+    true_cost: u32, // Secondary Sort: Actual distance
     index: usize,
     empire_id: u32,
 }
 
-// Implement ordering to prioritize lowest sort_cost, then lowest true_cost
+// implement ordering to prioritize lowest sort_cost, then lowest true_cost
 impl Ord for AutoGrowState {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.sort_cost.cmp(&self.sort_cost) // Reverse for Min-Heap
-            .then_with(|| other.true_cost.cmp(&self.true_cost)) // Tie-breaker
+        other.sort_cost.cmp(&self.sort_cost) 
+            .then_with(|| other.true_cost.cmp(&self.true_cost)) 
             .then_with(|| self.index.cmp(&other.index))
     }
 }
@@ -277,7 +277,6 @@ impl Resource {
         }
     }
 
-    // Returns the Strategic Value (0-255) we discussed for Dijkstra calculation
     pub fn get_value(&self) -> u32 {
         match self {
             Resource::Gold => 100,
@@ -297,7 +296,6 @@ impl Resource {
     // Returns Color in Little Endian (0xAABBGGRR) format for the pixel buffer
     pub fn get_color(&self) -> u32 {
         match self {
-            // A=FF (255) for all opaque colors
             Resource::Gold   => 0xFF00D7FF, // #FFD700
             Resource::Silver => 0xFFC0C0C0, // #C0C0C0
             Resource::Gems   => 0xFFD670DA, // #DA70D6 (Orchid)
@@ -387,7 +385,6 @@ pub struct World {
 #[wasm_bindgen]
 impl World {
     pub fn new(map_str: &str, value_str: Option<String>) -> World {
-        // (Parsing logic remains the same - usually fast enough sequentially)
         let lines: Vec<&str> = map_str.lines().filter(|l| !l.is_empty()).collect();
         let height = lines.len();
         let width = if height > 0 { lines[0].trim().len() } else { 0 };
@@ -474,7 +471,7 @@ impl World {
         self.resource_buffer.as_ptr()
     }
 
-    // --- PARALLEL RENDERER ---
+    // PARALLEL RENDERER
     
     pub fn render_terrain(&mut self) {
         // Zip the tiles (Read) with the buffer (Write)
@@ -490,7 +487,6 @@ impl World {
     pub fn render_ownership(&mut self) {
         let empires= &self.empires;
 
-        // We can also parallelize the ownership overlay
         self.ownership_buffer
             .par_iter_mut()
             .zip(self.owners.par_iter())
@@ -521,7 +517,7 @@ impl World {
             }
         };
 
-        // 2. Render Pixels in Parallel
+        // parallel pixel drawing
         self.dist_buffer
             .par_iter_mut()
             .zip(self.dist_map.par_iter())
@@ -728,16 +724,13 @@ impl World{
             costs[i] = cost;
         }
 
-        // Dijkstra setup
         let mut pq = BinaryHeap::<State>::new();
         let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
 
-        // Start point
         pq.push(State { cost: 0, index: start_index });
         self.dist_map[start_index] = 0;
 
         while let Some(State { cost, index }) = pq.pop() {
-            // If we found a shorter path previously, skip
             if cost > self.dist_map[index] {
                 continue;
             }
@@ -757,15 +750,12 @@ impl World{
                 let neib_idx = (ny as usize * width) + (nx as usize);
                 let neib_terrain = self.tiles[neib_idx];
 
-                // Calculate cost using empire settings and transition logic
                 let move_cost = costs[neib_terrain as usize];
                 let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
-                let penalty = if is_transition { costs[1] * 3 } else { 0 }; // using Water (index 1) cost for penalty base
-                
-                // Add saturation check to prevent overflow
+                let penalty = if is_transition { costs[1] * 3 } else { 0 }; 
                 let new_cost = cost.saturating_add(move_cost).saturating_add(penalty);
 
-                // If this path is better, record it and push to queue
+
                 if new_cost < self.dist_map[neib_idx] {
                     self.dist_map[neib_idx] = new_cost;
                     pq.push(State { cost: new_cost, index: neib_idx });
@@ -892,30 +882,93 @@ impl World{
     //     }
     // }
 
-    // Inside #[wasm_bindgen] impl World
 
-pub fn auto_grow(&mut self, size: u32, use_resources: bool) {
-    let width = self.width;
-    let height = self.height;
+    pub fn auto_grow(&mut self, size: u32, use_resources: bool) {
+        let width = self.width;
+        let height = self.height;
 
-    let mut pq = BinaryHeap::new();
-    let mut grow_counts: HashMap<u32, u32> = HashMap::new();
-    let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+        let mut pq = BinaryHeap::new();
+        let mut grow_counts: HashMap<u32, u32> = HashMap::new();
+        let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
 
-    // 1. SCAN LOOP
-    // We must populate the initial PQ with the current border tiles
-    for index in 0..(width * height) {
-        let owner = self.owners[index];
-        if owner != 0 {
-            // Check neighbors to see if this is a border tile
-            let x = (index % width) as i32;
-            let y = (index / width) as i32;
+        // SCAN LOOP for empty tiles
+
+        for index in 0..(width * height) {
+            let owner = self.owners[index];
+            if owner != 0 {
+                let x = (index % width) as i32;
+                let y = (index / width) as i32;
+                
+                let current_true_dist = self.dist_vector[index]; 
+
+                if let Some(empire) = self.empires.get(&owner) {
+                    let costs = empire.costs;
+
+                    for (dx, dy) in directions {
+                        let nx = x + dx;
+                        let ny = y + dy;
+                        if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
+                        
+                        let neib_idx = (ny as usize * width) + (nx as usize);
+                        
+                        if self.owners[neib_idx] == 0 {
+                            let neib_terrain = self.tiles[neib_idx];
+                            let move_cost = costs[neib_terrain as usize];
+                            
+                            let current_terrain = self.tiles[index];
+                            let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
+                            let penalty = if is_transition { costs[1] * 3 } else { 0 };
+
+                            let new_true_cost = current_true_dist.saturating_add(move_cost).saturating_add(penalty);
+
+                            let sort_cost = if use_resources {
+                                let resource_val = self.resources[neib_idx].get_value();
+                                // Formula: dist / (1 + value)
+                
+                                new_true_cost / (1 + resource_val)
+                            } else {
+                                new_true_cost
+                            };
+
+                            pq.push(AutoGrowState {
+                                sort_cost,
+                                true_cost: new_true_cost,
+                                index: neib_idx,
+                                empire_id: owner
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut local_dist = vec![u32::MAX; width * height];
+
+        // EXPANSION LOOP
+        while let Some(AutoGrowState { sort_cost: _, true_cost, index, empire_id }) = pq.pop() {
             
-            // Current true distance stored on the tile
-            let current_true_dist = self.dist_vector[index]; 
+            if self.owners[index] != 0 { continue; }
+            
+            if true_cost > local_dist[index] { continue; }
 
-            if let Some(empire) = self.empires.get(&owner) {
-                let costs = empire.costs;
+            let current_growth = grow_counts.entry(empire_id).or_insert(0);
+            if *current_growth >= size { continue; }
+
+            // claim Logic
+            if self.owners[index] == 0 {
+                if self.tiles[index].is_liveable() {
+                    self.owners[index] = empire_id;
+                    
+                    self.dist_vector[index] = true_cost; 
+                    local_dist[index] = true_cost;
+                    
+                    *current_growth += 1;
+                }
+
+                let costs = self.empires.get(&empire_id).unwrap().costs;
+                let x = (index % width) as i32;
+                let y = (index / width) as i32;
+                let current_terrain = self.tiles[index];
 
                 for (dx, dy) in directions {
                     let nx = x + dx;
@@ -923,110 +976,36 @@ pub fn auto_grow(&mut self, size: u32, use_resources: bool) {
                     if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
                     
                     let neib_idx = (ny as usize * width) + (nx as usize);
-                    
-                    // Found an empty neighbor? Candidate for growth.
+
                     if self.owners[neib_idx] == 0 {
                         let neib_terrain = self.tiles[neib_idx];
                         let move_cost = costs[neib_terrain as usize];
-                        
-                        let current_terrain = self.tiles[index];
                         let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
                         let penalty = if is_transition { costs[1] * 3 } else { 0 };
 
-                        // A. Calculate TRUE Cost (Standard Dijkstra)
-                        let new_true_cost = current_true_dist.saturating_add(move_cost).saturating_add(penalty);
+                        let new_true_cost = true_cost.saturating_add(move_cost).saturating_add(penalty);
 
-                        // B. Calculate SORT Cost (The "Diff Factor")
-                        let sort_cost = if use_resources {
+                        let new_sort_cost = if use_resources {
                             let resource_val = self.resources[neib_idx].get_value();
-                            // Formula: dist / (1 + value)
-                            // We use integer division. Higher value = Lower sort_cost = Higher Priority.
                             new_true_cost / (1 + resource_val)
                         } else {
                             new_true_cost
                         };
 
-                        pq.push(AutoGrowState {
-                            sort_cost,
-                            true_cost: new_true_cost,
-                            index: neib_idx,
-                            empire_id: owner
-                        });
+                        if new_true_cost < local_dist[neib_idx] {
+                            local_dist[neib_idx] = new_true_cost;
+                            pq.push(AutoGrowState { 
+                                sort_cost: new_sort_cost, 
+                                true_cost: new_true_cost, 
+                                index: neib_idx, 
+                                empire_id 
+                            });
+                        }
                     }
                 }
             }
         }
     }
-
-    let mut local_dist = vec![u32::MAX; width * height];
-
-    // 2. EXPANSION LOOP
-    while let Some(AutoGrowState { sort_cost: _, true_cost, index, empire_id }) = pq.pop() {
-        
-        if self.owners[index] != 0 { continue; }
-        
-        // Important: We compare against local_dist using TRUE COST to ensure shortest path logic holds
-        if true_cost > local_dist[index] { continue; }
-
-        let current_growth = grow_counts.entry(empire_id).or_insert(0);
-        if *current_growth >= size { continue; }
-
-        // Claim Logic
-        if self.owners[index] == 0 {
-            if self.tiles[index].is_liveable() {
-                self.owners[index] = empire_id;
-                
-                // Store the TRUE distance in the map data, so future calculations are accurate
-                self.dist_vector[index] = true_cost; 
-                local_dist[index] = true_cost;
-                
-                *current_growth += 1;
-            }
-
-            // Expand from new tile
-            let costs = self.empires.get(&empire_id).unwrap().costs;
-            let x = (index % width) as i32;
-            let y = (index / width) as i32;
-            let current_terrain = self.tiles[index];
-
-            for (dx, dy) in directions {
-                let nx = x + dx;
-                let ny = y + dy;
-                if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
-                
-                let neib_idx = (ny as usize * width) + (nx as usize);
-
-                if self.owners[neib_idx] == 0 {
-                    let neib_terrain = self.tiles[neib_idx];
-                    let move_cost = costs[neib_terrain as usize];
-                    let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
-                    let penalty = if is_transition { costs[1] * 3 } else { 0 };
-
-                    // A. Calculate TRUE Cost
-                    let new_true_cost = true_cost.saturating_add(move_cost).saturating_add(penalty);
-
-                    // B. Calculate SORT Cost
-                    let new_sort_cost = if use_resources {
-                        let resource_val = self.resources[neib_idx].get_value();
-                        new_true_cost / (1 + resource_val)
-                    } else {
-                        new_true_cost
-                    };
-
-                    if new_true_cost < local_dist[neib_idx] {
-                        local_dist[neib_idx] = new_true_cost;
-                        pq.push(AutoGrowState { 
-                            sort_cost: new_sort_cost, 
-                            true_cost: new_true_cost, 
-                            index: neib_idx, 
-                            empire_id 
-                        });
-                    }
-                }
-            }
-        }
-    }
-}
 
 }
 

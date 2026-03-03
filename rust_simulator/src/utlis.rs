@@ -2,7 +2,7 @@
 
 
 pub const INTI_COSTS: [u32; 8] = [
-    9999, // 0: Unknown / Void (Usually impassable)
+    9999, // 0: Unknown / Void
     25,  // 1: Water
     10,  // 2: River
     15,   // 3: Plain

@@ -40,10 +40,9 @@ function MapDistance() {
             activeEmpire.settings
         ));
 
-        // 2. Render to Buffer (Pass None for auto-scale, or Some(500) to cap at 500 units)
         world.render_dist_map();
 
-        // 3. Draw to Canvas
+        ///canvas drawijng
         const ctx = canvasRef.current.getContext("2d");
         if (ctx && memory) {
             drawDistanceLayer(ctx, world, memory);
@@ -73,10 +72,8 @@ function MapDistance() {
     //         activeEmpire.settings
     //     ));
 
-    //     // 2. Render to Buffer (Pass None for auto-scale, or Some(500) to cap at 500 units)
     //     world.render_dist_map();
 
-    //     // 3. Draw to Canvas
     //     const ctx = canvasRef.current.getContext("2d");
     //     if (ctx && memory) {
     //         drawDistanceLayer(ctx, world, memory);
@@ -95,7 +92,7 @@ function MapDistance() {
                 width: '100%',
                 height: '100%',
                 imageRendering: 'pixelated',
-                cursor: 'crosshair' // Indicates you can click to measure
+                cursor: 'crosshair'
             }}
             // onClick={handleMapClick}
         />

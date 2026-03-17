@@ -19,6 +19,13 @@ A high-performance, browser-based simulation engine built with **React**, **Rust
 
 ---
 
+## Demo
+
+
+https://github.com/user-attachments/assets/bc595513-fb4f-418c-85e9-95ce269d3a57
+
+
+
 ## 🏗 Architecture & Tech Stack
 
 ### The Frontend: React & TypeScript

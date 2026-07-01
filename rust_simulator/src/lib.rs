@@ -5,8 +5,8 @@ use rayon::{prelude::*};
 
 pub use wasm_bindgen_rayon::init_thread_pool;
 
-mod utlis;
-use utlis::INTI_COSTS;
+mod utils;
+use utils::{INTI_COSTS, heat_map_color, string_to_vec};
 
 
 #[wasm_bindgen]
@@ -22,51 +22,7 @@ macro_rules! console_log {
 }
 
  
-    // Maps t (0.0 to 1.0) to a u32 Color (0xAABBGGRR Little Endian)
-    // 0.0 = Red (Hot/Close)
-    // 0.5 = Green
-    // 1.0 = Dark Blue (Cold/Far)
-    fn heat_map_color(t: f32) -> u32 {
-        let r: u32;
-        let g: u32;
-        let b: u32;
-        let a: u32 = 0xFF; // Full Alpha
 
-        // Multi-stop Gradient: Red -> Yellow -> Green -> Cyan -> Blue
-        if t < 0.25 {
-            // Red to Yellow
-            // R: 255, G: 0->255, B: 0
-            let seg = t / 0.25;
-            r = 255;
-            g = (255.0 * seg) as u32;
-            b = 0;
-        } else if t < 0.5 {
-            // Yellow to Green
-            // R: 255->0, G: 255, B: 0
-            let seg = (t - 0.25) / 0.25;
-            r = (255.0 * (1.0 - seg)) as u32;
-            g = 255;
-            b = 0;
-        } else if t < 0.75 {
-            // Green to Cyan
-            // R: 0, G: 255, B: 0->255
-            let seg = (t - 0.5) / 0.25;
-            r = 0;
-            g = 255;
-            b = (255.0 * seg) as u32;
-        } else {
-            // Cyan to Dark Blue
-            // R: 0, G: 255->0, B: 255->139
-            let seg = (t - 0.75) / 0.25;
-            r = 0;
-            g = (255.0 * (1.0 - seg)) as u32;
-            // Fade Blue (255) down to DarkBlue (139)
-            b = (255.0 - (116.0 * seg)) as u32; 
-        }
-
-        // Combine into u32 (Little Endian: 0xAABBGGRR)
-        (a << 24) | (b << 16) | (g << 8) | r
-    }
 
 
 
@@ -125,191 +81,11 @@ impl PartialOrd for AutoGrowState {
 
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Terrain {
-    Water = 1,
-    River = 2,
-    Plain = 3,
-    Mountain = 4,
-    Desert = 5,
-    Forest = 6,
-    Ice = 7,
-    Unknown = 0,
-}
+mod terrain;
+pub use terrain::Terrain;
 
-impl Terrain {
-    pub fn from_u8(val: u8) -> Terrain {
-        match val {
-            1 => Terrain::Water,
-            2 => Terrain::River,
-            3 => Terrain::Plain,
-            4 => Terrain::Mountain,
-            5 => Terrain::Desert,
-            6 => Terrain::Forest,
-            7 => Terrain::Ice,
-            _ => Terrain::Unknown,
-        }
-    }
-
-    fn from_char(c: char) -> Terrain {
-        match c {
-            'W' => Terrain::Water,
-            'R' => Terrain::River,
-            'P' => Terrain::Plain,
-            'M' => Terrain::Mountain,
-            'D' => Terrain::Desert,
-            'F' => Terrain::Forest,
-            'I' => Terrain::Ice,
-            _ => Terrain::Unknown,
-        }
-    }
-
-    fn to_char(&self) -> char {
-        match self {
-            Terrain::Water => 'W',
-            Terrain::River => 'R',
-            Terrain::Plain => 'P',
-            Terrain::Mountain => 'M',
-            Terrain::Desert => 'D',
-            Terrain::Forest => 'F',
-            Terrain::Ice => 'I',
-            Terrain::Unknown => '?',
-        }
-    }
-
-    fn get_color(&self) -> u32 {
-        match self {
-            Terrain::Water => 0xFFDB9538,
-            Terrain::River => 0xFFE0C040,
-            Terrain::Plain => 0xFF408035,
-            Terrain::Mountain => 0xFF606060,
-            Terrain::Desert => 0xFF60C0F0,
-            Terrain::Forest => 0xFF225510,
-            Terrain::Ice => 0xFFFAFAFA,
-            Terrain::Unknown => 0xFF000000,
-        }
-    }
-
-    fn is_liveable(&self) -> bool{
-        match self {
-            Terrain::Water | Terrain::Unknown => false,
-            _ => true,
-        }
-    }
-
-    fn is_watery(&self) -> bool{
-        match self{
-            Terrain::Water | Terrain::River => true,
-            _ => false,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Resource {
-    None = 0,
-    Gold = 1,
-    Silver = 2,
-    Gems = 3,
-    Coal = 4,
-    Cows = 5,
-    Wheat = 6,
-    Fish = 7,
-    Silk = 8,
-    Spices = 9,
-    Wine = 10,
-}
-
-impl Resource {
-    pub fn from_u8(val: u8) -> Resource {
-        match val {
-            1 => Resource::Gold,
-            2 => Resource::Silver,
-            3 => Resource::Gems,
-            4 => Resource::Coal,
-            5 => Resource::Cows,
-            6 => Resource::Wheat,
-            7 => Resource::Fish,
-            8 => Resource::Silk,
-            9 => Resource::Spices,
-            10 => Resource::Wine,
-            _ => Resource::None,
-        }
-    }
-
-    pub fn to_u8(&self) -> u8 {
-        *self as u8
-    }
-
-    // Characters for map string export/import
-    // g=Gold, s=Silver, *=Gems, c=Coal, C=Cows, w=Wheat, f=Fish, S=Silk, !=Spices, v=Wine
-    pub fn from_char(c: char) -> Resource {
-        match c {
-            'g' => Resource::Gold,
-            's' => Resource::Silver,
-            '*' => Resource::Gems,
-            'c' => Resource::Coal,
-            'C' => Resource::Cows,
-            'w' => Resource::Wheat,
-            'f' => Resource::Fish,
-            'S' => Resource::Silk,
-            '!' => Resource::Spices,
-            'v' => Resource::Wine,
-            _ => Resource::None,
-        }
-    }
-
-    pub fn to_char(&self) -> char {
-        match self {
-            Resource::Gold => 'g',
-            Resource::Silver => 's',
-            Resource::Gems => '*',
-            Resource::Coal => 'c',
-            Resource::Cows => 'C',
-            Resource::Wheat => 'w',
-            Resource::Fish => 'f',
-            Resource::Silk => 'S',
-            Resource::Spices => '!',
-            Resource::Wine => 'v',
-            Resource::None => '.',
-        }
-    }
-
-    pub fn get_value(&self) -> u32 {
-        match self {
-            Resource::Gold => 100,
-            Resource::Silver => 70,
-            Resource::Gems => 150,
-            Resource::Coal => 70,
-            Resource::Cows => 30,
-            Resource::Wheat => 20,
-            Resource::Fish => 25,
-            Resource::Silk => 80,
-            Resource::Spices => 90,
-            Resource::Wine => 40,
-            Resource::None => 0,
-        }
-    }
-
-    // Returns Color in Little Endian (0xAABBGGRR) format for the pixel buffer
-    pub fn get_color(&self) -> u32 {
-        match self {
-            Resource::Gold   => 0xFF00D7FF, // #FFD700
-            Resource::Silver => 0xFFC0C0C0, // #C0C0C0
-            Resource::Gems   => 0xFFD670DA, // #DA70D6 (Orchid)
-            Resource::Coal   => 0xFF4F4F2F, // #2F4F4F (Dark Slate Grey)
-            Resource::Cows   => 0xFF2D52A0, // #A0522D (Sienna)
-            Resource::Wheat  => 0xFFB3DEF5, // #F5DEB3 (Wheat)
-            Resource::Fish   => 0xFFEEEEAF, // #AFEEEE (Pale Turquoise)
-            Resource::Silk   => 0xFFB469FF, // #FF69B4 (Hot Pink)
-            Resource::Spices => 0xFF1E69D2, // #D2691E (Chocolate)
-            Resource::Wine   => 0xFF000080, // #800000 (Maroon)
-            Resource::None   => 0x00000000, // Transparent or handle separately
-        }
-    }
-}
+mod rresource;
+pub use rresource::Resource;
 
 
 #[derive(Clone, Copy, Debug)]
@@ -328,34 +104,6 @@ impl Empire{
         Empire { id, color, costs: settings, size, cap_index }
     }
 }
-
-
-
-fn string_to_vec<T, F>(map_data: &str, parser: F, fixed_size: usize, default: T) -> Vec<T>
-where
-    F: Fn(char) -> T, 
-    T: Clone,
-{
-    let lines: Vec<&str> = map_data.lines().filter(|l| !l.is_empty()).collect();
-    let height = lines.len();
-    let width = if height > 0 { lines[0].trim().len() } else { 0 };
-    let size = width * height;
-
-    if size != fixed_size {
-        return vec![default; size]
-    }
-
-    let mut result_vector = Vec::with_capacity(size);
-
-    for line in lines {
-        for c in line.trim().chars() {
-            result_vector.push(parser(c));
-        }
-    }
-
-    result_vector
-}
-
 
 
 
@@ -765,122 +513,6 @@ impl World{
         
        ;
     }
-
-
-    // pub fn auto_grow(&mut self, size: u32) {
-    //     let width = self.width;
-    //     let height = self.height;
-
-    //     let mut pq = BinaryHeap::new();
-    //     let mut grow_counts: HashMap<u32, u32> = HashMap::new();
-    //     let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
-
-    //     // --- 1. SCAN FOR FRONTIER (The Fix) ---
-    //     // Instead of starting at capitals, we look for owned tiles next to empty ones.
-    //     // This is O(MapSize), which is very fast in Rust/WASM (~5-10ms for 2000x2000).
-    //     for index in 0..(width * height) {
-    //         let owner = self.owners[index];
-            
-    //         // If this tile belongs to an empire...
-    //         if owner != 0 {
-    //             // Check if it's a "Frontier" tile (has empty neighbor)
-    //             let x = (index % width) as i32;
-    //             let y = (index / width) as i32;
-    //             let current_dist = self.dist_vector[index];
-
-    //             // Get costs for this empire
-    //             // (Unwrap safety: if owner exists in array, it must exist in map)
-    //             if let Some(empire) = self.empires.get(&owner) {
-    //                 let costs = empire.costs;
-
-    //                 for (dx, dy) in directions {
-    //                     let nx = x + dx;
-    //                     let ny = y + dy;
-
-    //                     // Bounds check
-    //                     if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
-                        
-    //                     let neib_idx = (ny as usize * width) + (nx as usize);
-                        
-    //                     // IF NEIGHBOR IS EMPTY -> It's a candidate for growth!
-    //                     if self.owners[neib_idx] == 0 {
-    //                         // Calculate cost to move INTO the empty tile
-    //                         let neib_terrain = self.tiles[neib_idx];
-    //                         let move_cost = costs[neib_terrain as usize];
-                            
-    //                         // Transition penalty logic (optional)
-    //                         let current_terrain = self.tiles[index];
-    //                         let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
-    //                         let penalty = if is_transition { costs[1] * 3 } else { 0 };
-
-    //                         let new_cost = current_dist.saturating_add(move_cost).saturating_add(penalty);
-
-    //                         // Push to PQ
-    //                         pq.push(AutoGrowState {
-    //                             cost: new_cost, 
-    //                             index: neib_idx, 
-    //                             empire_id: owner
-    //                         });
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     let mut local_dist = vec![u32::MAX; width * height];
-
-    //     // --- 2. THE FLOOD LOOP ---
-    //     while let Some(AutoGrowState { cost, index, empire_id }) = pq.pop() {
-            
-    //         // cant go in your teritory and for now not in enemy teritory
-    //         if self.owners[index] != 0 {continue;}
-    //         if cost > local_dist[index] { continue; }
-
-    //         let current_growth = grow_counts.entry(empire_id).or_insert(0);
-    //         if *current_growth >= size { continue; }
-
-    //         // C. Claim Logic
-    //         if self.owners[index] == 0 {
-
-    //             if self.tiles[index].is_liveable() {
-    //                 self.owners[index] = empire_id;
-    //                 self.dist_vector[index] = cost;
-    //                 local_dist[index] = cost;
-    //                 *current_growth += 1;
-    //             }
-
-    //             // D. Expand from this new tile
-    //             let costs = self.empires.get(&empire_id).unwrap().costs;
-    //             let x = (index % width) as i32;
-    //             let y = (index / width) as i32;
-    //             let current_terrain = self.tiles[index];
-
-    //             for (dx, dy) in directions {
-    //                 let nx = x + dx;
-    //                 let ny = y + dy;
-    //                 if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 { continue; }
-                    
-    //                 let neib_idx = (ny as usize * width) + (nx as usize);
-
-    //                 // Only expand into EMPTY space
-    //                 if self.owners[neib_idx] == 0 {
-    //                     let neib_terrain = self.tiles[neib_idx];
-    //                     let move_cost = costs[neib_terrain as usize];
-    //                     let is_transition = current_terrain.is_watery() != neib_terrain.is_watery();
-    //                     let penalty = if is_transition { costs[1] * 3 } else { 0 };
-
-    //                     let new_cost = cost.saturating_add(move_cost).saturating_add(penalty);
-
-    //                     // Competitive Check
-    //                     if new_cost < local_dist[neib_idx] {
-    //                         local_dist[neib_idx] = new_cost;
-    //                         pq.push(AutoGrowState { cost: new_cost, index: neib_idx, empire_id });
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
 
     pub fn auto_grow(&mut self, size: u32, use_resources: bool) {

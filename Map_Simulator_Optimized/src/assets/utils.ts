@@ -51,7 +51,7 @@ export const drawDistanceLayer = (
 ) => {
     const width = world.width();
     const height = world.height();
-    const ptr = world.get_dist_buffer_ptr(); // <--- The new pointer we made in Rust
+    const ptr = world.get_dist_buffer_ptr();
 
     const data = new Uint8ClampedArray(
         memory.buffer,

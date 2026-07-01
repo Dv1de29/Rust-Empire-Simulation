@@ -13,7 +13,7 @@ export const INITIAL_SETTINGS: SettingsValue = {
 
     ice: 100,   
 
-    size: 100,
+    size: 2000,
 };
 
 
